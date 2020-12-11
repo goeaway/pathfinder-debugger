@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist",
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "module": "es2015",
+        "target": "es5",
+        "lib": ["es6", "dom"], 
+        "jsx": "react",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "baseUrl": ".",
+        "paths": {
+            "@src/*": ["src/*"],
+            "@config": ["src/config/live"],
+            "@testing/*": ["testing/*"]
+        }
+    },
+   "exclude": ["node_modules"]
+}
