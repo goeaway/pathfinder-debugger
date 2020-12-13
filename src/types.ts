@@ -55,3 +55,10 @@ export interface Breakpoints {
     lg: number;
     xl: number;
 }
+
+export interface CodeStorageService {
+    getCode: () => { algo: Algo, code: string };
+    saveCode: (code: {algo: Algo, code: string}) => void;
+    getGrid: () => Cells;
+    saveGrid: (cells: Cells) => void;
+}

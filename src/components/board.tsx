@@ -1,5 +1,5 @@
 import { useRadioGroup } from "@material-ui/core";
-import { Cells, Pos } from "@src/types";
+import { Cells, CellType, Pos } from "@src/types";
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
@@ -13,6 +13,71 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
     const [selectedPos, setSelectedPos] = useState<Pos>(null);
     const boardContainerRef = useRef<HTMLDivElement>();
     const [cellSize, setCellSize] = useState(0);
+    const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
+
+    const actionHandler = (type: CellType, actionPos: Pos, actionCells: Cells, actionCellChange: (newCells: Cells) => void) => {
+        switch(type) {
+            case "start": {
+                let currentStart: Pos = null;
+
+                actionCells.forEach((column, y) => {
+                    column.forEach((c, x) => {
+                        if(c.type === "start") {
+                            currentStart = {x,y};
+                            return;
+                        }
+                    });
+                    if(currentStart) {
+                        return;
+                    }
+                });
+
+                if(currentStart) {
+                    const currentStartCell = actionCells[currentStart.y][currentStart.x];
+                    currentStartCell.type = null;
+                }
+
+                actionCells[actionPos.y][actionPos.x].type = "start";
+                actionCellChange(actionCells);
+
+                break;
+            }
+            case "wall": {
+                // find pos in cells, toggle wall flag
+                actionCells[actionPos.y][actionPos.x].type = actionCells[actionPos.y][actionPos.x].type === "wall" ? null : "wall";
+                actionCellChange(actionCells);
+                break;
+            }
+            case "end": {
+                let currentEnd: Pos = null;
+
+                actionCells.forEach((column, y) => {
+                    column.forEach((c, x) => {
+                        if(c.type === "end") {
+                            currentEnd = {x,y};
+                            return;
+                        }
+                    });
+                    if(currentEnd) {
+                        return;
+                    }
+                });
+
+                if(currentEnd) {
+                    const currentEndCell = actionCells[currentEnd.y][currentEnd.x];
+                    currentEndCell.type = null;
+                }
+
+                actionCells[actionPos.y][actionPos.x].type = "end";
+                actionCellChange(actionCells);
+
+                break;
+            }
+            case "weight": {
+                break;
+            }
+        }
+    }
 
     useEffect(() => {
         // handle key presses for arrow keys to update the selected cell
@@ -73,73 +138,23 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
                 return;
             }
 
-            const copy = [...cells];
-            
+            let type : CellType = "start";
+
             switch(key) {
-                case "s": {
-                    let currentStart: Pos = null;
-
-                    copy.forEach((column, y) => {
-                        column.forEach((c, x) => {
-                            if(c.type === "start") {
-                                currentStart = {x,y};
-                                return;
-                            }
-                        });
-                        if(currentStart) {
-                            return;
-                        }
-                    });
-
-                    if(currentStart) {
-                        const currentStartCell = copy[currentStart.y][currentStart.x];
-                        currentStartCell.type = null;
-                    }
-
-                    copy[selectedPos.y][selectedPos.x].type = "start";
-                    onCellsChange(copy);
-
+                case "s":
                     break;
-                }
-                case "w": {
-                    // find pos in cells, toggle wall flag
-                    copy[selectedPos.y][selectedPos.x].type = copy[selectedPos.y][selectedPos.x].type === "wall" ? null : "wall";
-                    onCellsChange(copy);
+                case "e":
+                    type = "end";
                     break;
-                }
-                case "e": {
-                    let currentEnd: Pos = null;
-
-                    copy.forEach((column, y) => {
-                        column.forEach((c, x) => {
-                            if(c.type === "end") {
-                                currentEnd = {x,y};
-                                return;
-                            }
-                        });
-                        if(currentEnd) {
-                            return;
-                        }
-                    });
-
-                    if(currentEnd) {
-                        const currentEndCell = copy[currentEnd.y][currentEnd.x];
-                        currentEndCell.type = null;
-                    }
-
-                    copy[selectedPos.y][selectedPos.x].type = "end";
-                    onCellsChange(copy);
-
+                case "w":
+                    type = "wall";
                     break;
-                }
-                case "q": {
-
+                case "q":
                     break;
-                }
             }
 
-            // make change to the cell at pos
-            // can only have one start and end, so must remove existing one of those in cells array if needed
+            const copy = [...cells];
+            actionHandler(type, selectedPos, copy, onCellsChange);
         };
 
         window.addEventListener("keydown", arrowPressHandler);
@@ -184,6 +199,36 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
         setSelectedPos(null);
     }
 
+    const onCellClick = (pos: Pos) => {
+        if(onClickSetType) {
+            const copy = [...cells];
+            actionHandler(onClickSetType, pos, copy, onCellsChange);
+        }
+    }
+
+    const onTypeChangeClick = () => {
+        switch(onClickSetType) {
+            case "start":
+                setOnClickSetType("end");
+                break;
+            case "end":
+                setOnClickSetType("wall");
+                break;
+            case "wall":
+                setOnClickSetType("start");
+        }
+    }
+
+    const onClearClick = () => {
+        const copy = [...cells];
+        copy.forEach(row => row.forEach(cell => {
+            cell.type = null;
+            cell.checkCount = 0;
+            cell.shortestPath = false;
+        }));
+        onCellsChange(copy);
+    }
+
     return (
         <OuterContainer>
             <BoardContainer role="board" ref={boardContainerRef}>
@@ -195,12 +240,17 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
                                 cell={cell}
                                 onMouseEnter={() => onCellEnter({x: ix, y: iy})}
                                 onMouseLeave={onCellLeave}
+                                onClick={() => onCellClick({x: ix, y: iy})}
                                 selected={selectedPos && ix === selectedPos.x && iy === selectedPos.y} 
                                 key={`${ix},${iy}`} />
                             ))}
                     </CellRow>
                 ))}
             </BoardContainer>
+            <Controls>
+                <button type="button" onClick={onTypeChangeClick}>{onClickSetType}</button>
+                <button type="button" onClick={onClearClick}>Clear</button>
+            </Controls>
         </OuterContainer>
     );
 }
@@ -213,6 +263,11 @@ const OuterContainer = styled.div`
     align-items: center;
     flex-grow: 3;
     padding: 2rem; 
+    flex-direction: column;
+`
+
+const Controls = styled.div`
+    padding: .5rem;
 `
 
 const BoardContainer = styled.div`

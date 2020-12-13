@@ -7,10 +7,11 @@ export interface CellProps {
     selected?: boolean;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
+    onClick?: () => void;
     size: number;
 }
 
-const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouseLeave, size}) => {
+const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouseLeave, onClick, size}) => {
     return (
         <Container 
             size={size}
@@ -18,7 +19,9 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
             checkCount={cell.checkCount}
             selected={selected} 
             onMouseEnter={onMouseEnter} 
-            onMouseLeave={onMouseLeave}>
+            onMouseLeave={onMouseLeave}
+            onClick={onClick}    
+        >
             {/* Display Icon based on start/end/wall/weight */}
             {cell.type === "wall" && (
                 <span>W</span>

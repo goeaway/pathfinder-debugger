@@ -1,10 +1,12 @@
-import { Cell, Cells, CellUpdate, Pos, RunSettings } from "@src/types";
+import { Algo, Cell, Cells, CellUpdate, Pos, RunSettings } from "@src/types";
 import React, { useEffect, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
 import Editor from "./editor";
 import Menu from "./menu";
 import Dark from "@src/themes/dark";
+import algorithms from "@src/algorithms";
+import { useCodeStorage } from "@src/hooks/use-code-storage";
 
 const generateCells = (x: number, y: number) => {
     const yArr = new Array<Array<Cell>>(y);
@@ -23,12 +25,13 @@ const generateCells = (x: number, y: number) => {
 const RENDER_WAIT_DEFAULT = 25;
 
 const App = () => {
+    const { getCode, saveCode, getGrid, saveGrid } = useCodeStorage();
     const [running, setRunning] = useState(false);
-    const [code, setCode] = useState("");
+    const [algo, setAlgo] = useState<{algo: Algo, code: string}>(getCode() || { algo: algorithms[0], code: ""});
     const X = 20;
     const Y = 20;
-
-    const [cells, setCells] = useState<Cells>(generateCells(X, Y));
+    const [cells, setCells] = useState<Cells>(getGrid() || generateCells(X, Y));
+    const [runningCancelled, setRunningCancelled] = useState(false);
 
     useEffect(() => {
         const getSettingsForRun = () : RunSettings => {
@@ -80,12 +83,15 @@ const App = () => {
                     setCells(copy);
 
                     setTimeout(res, RENDER_WAIT_DEFAULT);
+                } else {
+                    res();
                 }
             })
         }
 
         // add window.board api
         window.board = {
+            cancelled: () => runningCancelled,
             run: (pathfinderRunner: (
                     settings: RunSettings, 
                     updater: (cellUpdates: Array<CellUpdate>) => Promise<void>) => Promise<Array<Pos>>) => {
@@ -100,9 +106,11 @@ const App = () => {
 
                 // set that we're running, then call the runner function
                 setRunning(true);
+
                 pathfinderRunner(getSettingsForRun(), updater)
                     .then(async path => {
                         setRunning(false);
+                        setRunningCancelled(false);
 
                         // provides an array of positions in the shortest path, order is important
                         // if path not possible, null is provided
@@ -127,17 +135,32 @@ const App = () => {
                     });
             }
         }
+    }, [cells, runningCancelled]);
+
+    useEffect(() => {
+        saveGrid(cells);
     }, [cells]);
+
+    useEffect(() => {
+        saveCode(algo);
+    }, [algo]);
 
     const onRunHandler = () => {
         if(running) {
-            // temporarily change the render time?
+            // cancel running
+            setRunningCancelled(true);
         } else {
             // ensure we have a start and a finish
-    
+            const hasStart = cells.some(row => row.some(cell => cell.type === "start"));
+            const hasEnd = cells.some(row => row.some(cell => cell.type === "end"));
+
+            if(!hasStart || !hasEnd) {
+                return;
+            }
+
             // eval the editor code
             try {
-                eval(code);
+                eval(algo.code);
             } catch (e) {
                 const error = e as Error;
                 console.error(error.stack);
@@ -146,7 +169,19 @@ const App = () => {
     };
 
     const onCodeChangeHandler = (value: string) => {
-        setCode(value);
+        const newAlgo = Object.assign({}, algo);
+        newAlgo.code = value;
+        setAlgo(newAlgo);
+    }
+
+    const onAlgorithmChangeHandler = (algo: Algo) => {
+        setAlgo({ algo, code: algo.source});
+    }
+
+    const onResetHandler = () => {
+        const newAlgo = Object.assign({}, algo);
+        newAlgo.code = algo.algo.source;
+        setAlgo(newAlgo);
     }
 
     return (
@@ -154,11 +189,11 @@ const App = () => {
             <AppContainer role="app">
                 <TopBar>
                     <Title>Pathfinder Debugger</Title>
-                    <RunButton onClick={onRunHandler} running={running}>{(running ? "Skip" : "Run")}</RunButton>
+                    <RunButton onClick={onRunHandler} running={running}>{(running ? "Stop" : "Run")}</RunButton>
                 </TopBar>
-                <Menu onAlgorithmChange={onCodeChangeHandler} />
+                <Menu onAlgorithmChange={onAlgorithmChangeHandler} />
                 <ContentContainer>
-                    <Editor code={code} onCodeChange={onCodeChangeHandler} />
+                    <Editor code={algo.code} onCodeChange={onCodeChangeHandler} onReset={onResetHandler} />
                     <Board cells={cells} onCellsChange={setCells} />
                 </ContentContainer>
             </AppContainer>
@@ -169,7 +204,7 @@ const App = () => {
 export default App;
 
 const AppContainer = styled.div`
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Roboto', sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -177,6 +212,10 @@ const AppContainer = styled.div`
 
     > * {
         width: 100%;
+    }
+
+    button {
+        font-family: 'Roboto', sans-serif;
     }
 
     @media(min-width:${p => p.theme.breakpoints.sm}px) {

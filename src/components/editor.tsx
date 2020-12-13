@@ -10,9 +10,10 @@ import styled from "styled-components";
 export interface EditorProps {
     code: string;
     onCodeChange: (value: string) => void;
+    onReset: () => void;
 }
 
-const Editor : React.FC<EditorProps> = ({code, onCodeChange}) => {
+const Editor : React.FC<EditorProps> = ({code, onCodeChange, onReset}) => {
     return (
         <Container>
             
@@ -31,7 +32,7 @@ const Editor : React.FC<EditorProps> = ({code, onCodeChange}) => {
                 }}
             />
             <Controls>
-                <button type="button">Reset</button>
+                <button type="button" onClick={onReset}>Reset</button>
             </Controls>
         </Container>
     );
