@@ -1,5 +1,6 @@
+import { useRadioGroup } from "@material-ui/core";
 import { Cells, Pos } from "@src/types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
 
@@ -10,6 +11,8 @@ export interface BoardProps {
 
 const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => { 
     const [selectedPos, setSelectedPos] = useState<Pos>(null);
+    const boardContainerRef = useRef<HTMLDivElement>();
+    const [cellSize, setCellSize] = useState(0);
 
     useEffect(() => {
         // handle key presses for arrow keys to update the selected cell
@@ -147,6 +150,31 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
             window.removeEventListener("keydown", actionPressHandler);
         }
     }, [selectedPos, cells]);
+
+    useLayoutEffect(() => {
+        const cellSizeHandler = () => {
+            // get smallest of height and width of board container
+            // divide that by the amount of cells we have in that dimension
+            // set cellSize to be that calc
+            if(boardContainerRef.current) {
+                const { height, width } = boardContainerRef.current.getBoundingClientRect();
+
+                const maxCellWidth = Math.floor(width / cells[0].length);
+                const maxCellHeight = Math.floor(height / cells.length);
+
+                const newCellSize = Math.min(maxCellHeight, maxCellWidth);
+                setCellSize(newCellSize);
+            }
+        }
+
+        cellSizeHandler();
+
+        window.addEventListener("resize", cellSizeHandler);
+
+        return () => {
+            window.removeEventListener("resize", cellSizeHandler);
+        }
+    }, []);
     
     const onCellEnter = (pos: Pos) => {
         setSelectedPos(pos);
@@ -157,33 +185,45 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
     }
 
     return (
-        <BoardContainer role="board">
-            {cells.map((cellArray, iy) => (
-                <CellRow>
-                    {cellArray.map((cell, ix) => (
-                        <DisplayCell 
-                            cell={cell}
-                            onMouseEnter={() => onCellEnter({x: ix, y: iy})}
-                            onMouseLeave={onCellLeave}
-                            selected={selectedPos && ix === selectedPos.x && iy === selectedPos.y} 
-                            key={`${ix},${iy}`} />
-                    ))}
-                </CellRow>
-            ))}
-        </BoardContainer>
+        <OuterContainer>
+            <BoardContainer role="board" ref={boardContainerRef}>
+                {cells.map((cellRow, iy) => (
+                    <CellRow>
+                        {cellRow.map((cell, ix) => (
+                            <DisplayCell 
+                                size={cellSize}
+                                cell={cell}
+                                onMouseEnter={() => onCellEnter({x: ix, y: iy})}
+                                onMouseLeave={onCellLeave}
+                                selected={selectedPos && ix === selectedPos.x && iy === selectedPos.y} 
+                                key={`${ix},${iy}`} />
+                            ))}
+                    </CellRow>
+                ))}
+            </BoardContainer>
+        </OuterContainer>
     );
 }
 
 export default Board;
 
+const OuterContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 3;
+    padding: 2rem; 
+`
+
 const BoardContainer = styled.div`
     display: flex;
     flex-direction: column;
-    padding: 2rem;
-    gap: 1px;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
 `
 
 const CellRow = styled.div`
     display: flex;
-    gap: 1px; 
+    justify-content: center;
 `

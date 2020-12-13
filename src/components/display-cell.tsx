@@ -7,11 +7,13 @@ export interface CellProps {
     selected?: boolean;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
+    size: number;
 }
 
-const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouseLeave}) => {
+const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouseLeave, size}) => {
     return (
         <Container 
+            size={size}
             shortestPath={cell.shortestPath}
             checkCount={cell.checkCount}
             selected={selected} 
@@ -37,12 +39,13 @@ interface ContainerProps {
     selected?: boolean;
     checkCount?: number;
     shortestPath?: boolean;
+    size: number;
 }
 
 const Container = styled.span`
+    width: ${(p: ContainerProps) => p.size}px;
+    height: ${(p: ContainerProps) => p.size}px;
     border: 1px solid black;
-    width: 25px;
-    height: 25px;
     background: white;
     cursor: pointer;
     display: flex;

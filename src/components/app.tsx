@@ -1,9 +1,10 @@
 import { Cell, Cells, CellUpdate, Pos, RunSettings } from "@src/types";
-import React, { cloneElement, useEffect, useState } from "react";
-import styled from "styled-components";
+import React, { useEffect, useState } from "react";
+import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
 import Editor from "./editor";
-import Controls from "./controls";
+import Menu from "./menu";
+import Dark from "@src/themes/dark";
 
 const generateCells = (x: number, y: number) => {
     const yArr = new Array<Array<Cell>>(y);
@@ -25,7 +26,7 @@ const App = () => {
     const [running, setRunning] = useState(false);
     const [code, setCode] = useState("");
     const X = 20;
-    const Y = 10;
+    const Y = 20;
 
     const [cells, setCells] = useState<Cells>(generateCells(X, Y));
 
@@ -119,7 +120,7 @@ const App = () => {
     
                                 await new Promise(res => setTimeout(() => {
                                     setCells(c);
-                                    res();
+                                    res(null);
                                 }, RENDER_WAIT_DEFAULT));
                             }
                         }
@@ -129,39 +130,102 @@ const App = () => {
     }, [cells]);
 
     const onRunHandler = () => {
-        // ensure we have a start and a finish
-
-        // eval the editor code
-        try {
-            eval(code);
-        } catch (e) {
-            const error = e as Error;
-            console.error(error.stack);
+        if(running) {
+            // temporarily change the render time?
+        } else {
+            // ensure we have a start and a finish
+    
+            // eval the editor code
+            try {
+                eval(code);
+            } catch (e) {
+                const error = e as Error;
+                console.error(error.stack);
+            }
         }
     };
-
-    const onSkipHandler = () => {
-
-    }
 
     const onCodeChangeHandler = (value: string) => {
         setCode(value);
     }
 
     return (
-        <Container role="app">
-            <Controls onRun={onRunHandler} onSkip={onSkipHandler} running={running} />
-            <Editor code={code} onCodeChange={onCodeChangeHandler} />
-            <Board cells={cells} onCellsChange={setCells} />
-        </Container>
+        <ThemeProvider theme={Dark}>
+            <AppContainer role="app">
+                <TopBar>
+                    <Title>Pathfinder Debugger</Title>
+                    <RunButton onClick={onRunHandler} running={running}>{(running ? "Skip" : "Run")}</RunButton>
+                </TopBar>
+                <Menu onAlgorithmChange={onCodeChangeHandler} />
+                <ContentContainer>
+                    <Editor code={code} onCodeChange={onCodeChangeHandler} />
+                    <Board cells={cells} onCellsChange={setCells} />
+                </ContentContainer>
+            </AppContainer>
+        </ThemeProvider>
     );
 }
 
 export default App;
 
-const Container = styled.div`
+const AppContainer = styled.div`
     font-family: 'Poppins', sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
+    height: 100%;
+
+    > * {
+        width: 100%;
+    }
+
+    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+        display: grid;
+        grid-template-rows: min-content auto;
+        grid-template-columns: 90px auto;
+    }
+`
+
+const TopBar = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    grid-column-start: 1;
+    grid-column-end: 3;
+    border-bottom: 1px solid black;
+`
+interface RunButtonProps {
+    running?: boolean;
+}
+
+const RunButton = styled.button`
+    border: none;
+    height: 50px;
+    font-size: 16px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: background 300ms ease;
+
+    background: ${(p: RunButtonProps) => p.running ? "red" : "green"};
+    color: white;
+
+    &:hover {
+        background: ${(p: RunButtonProps) => p.running ? "darkred" : "darkgreen"};
+    }
+`
+
+const ContentContainer = styled.div`
+    height: 100%;
+
+
+    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+        display: flex;
+    }
+`
+
+const Title = styled.h1`
+    font-size: 30px;
+    line-height: 40px;
+    padding: .3rem 1rem;
+    margin: 0;
 `
