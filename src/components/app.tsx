@@ -255,10 +255,14 @@ const RunButton = styled.button`
 
 const ContentContainer = styled.div`
     height: 100%;
-
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
 
     @media(min-width:${p => p.theme.breakpoints.sm}px) {
-        display: flex;
+        flex-direction: row;
+        overflow-y: hidden;
+        overflow-x: auto;
     }
 `
 

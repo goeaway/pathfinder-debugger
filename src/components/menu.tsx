@@ -29,7 +29,10 @@ export default Menu;
 
 const Container = styled.div`
     padding: 0 1rem;
-    height: 100%;
+    
+    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+        height: 100%;
+    }
 `
 
 const TabContainer = styled.div`

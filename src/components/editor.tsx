@@ -46,6 +46,9 @@ const Container = styled.div`
     flex-direction: column;
     border-right: 1px solid black;
     border-left: 1px solid black;
+
+    min-height: 300px;
+    min-width: 300px;
 `
 
 const Controls = styled.div`
