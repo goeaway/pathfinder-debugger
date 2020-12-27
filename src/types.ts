@@ -8,6 +8,19 @@ export interface Cell {
     shortestPath?: boolean;
 }
 
+export interface BoardState {
+    start: Pos;
+    end: Pos;
+    walls: Array<Pos>;
+    weights: Array<Pos>;
+    rows: number;
+    columns: number;
+    checked: Array<{pos: Pos, count: number}>;
+    shortestPath: Array<Pos>;
+}
+
+export type RunSettings = Pick<BoardState, "start" | "end" | "walls" | "rows" | "columns">;
+
 export interface CellUpdate {
     pos: Pos;
     checkCountUpdate: number;
@@ -22,14 +35,6 @@ export interface Algo {
     id: string;
     name: string;
     source: string;
-}
-
-export interface RunSettings {
-    x: number;
-    y: number;
-    start: Pos;
-    end: Pos;
-    walls: Array<Pos>;
 }
 
 export interface Theme {
@@ -59,6 +64,6 @@ export interface Breakpoints {
 export interface CodeStorageService {
     getCode: () => { algo: Algo, code: string };
     saveCode: (code: {algo: Algo, code: string}) => void;
-    getGrid: () => Cells;
-    saveGrid: (cells: Cells) => void;
+    getBoardState: () => BoardState;
+    saveBoardState: (boardState: BoardState) => void;
 }

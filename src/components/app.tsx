@@ -1,4 +1,4 @@
-import { Algo, Cell, Cells, CellUpdate, Pos, RunSettings } from "@src/types";
+import { Algo, BoardState, Cell, Cells, CellUpdate, Pos, RunSettings } from "@src/types";
 import React, { useEffect, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
@@ -8,61 +8,39 @@ import Dark from "@src/themes/dark";
 import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
 
-const generateCells = (x: number, y: number) => {
-    const yArr = new Array<Array<Cell>>(y);
-
-    for(let i = 0; i < yArr.length; i++) {
-        yArr[i] = new Array<Cell>(x);
-
-        for(let j = 0; j < yArr[i].length; j++) {
-            yArr[i][j] = {};
-        }
+const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
+    return {
+        rows,
+        columns,
+        walls:[],
+        start: null,
+        end: null,
+        weights: [],
+        checked: [],
+        shortestPath: []
     }
-
-    return yArr;
 }
 
 const RENDER_WAIT_DEFAULT = 25;
+const COLUMNS = 20;
+const ROWS = 20;
 
 const App = () => {
-    const { getCode, saveCode, getGrid, saveGrid } = useCodeStorage();
+    const { getCode, saveCode, getBoardState, saveBoardState } = useCodeStorage();
     const [running, setRunning] = useState(false);
     const [algo, setAlgo] = useState<{algo: Algo, code: string}>(getCode() || { algo: algorithms[0], code: ""});
-    const X = 20;
-    const Y = 20;
-    const [cells, setCells] = useState<Cells>(getGrid() || generateCells(X, Y));
+    const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(ROWS, COLUMNS));
     const [runningCancelled, setRunningCancelled] = useState(false);
 
     useEffect(() => {
         const getSettingsForRun = () : RunSettings => {
             // return current settings
-            let start: Pos = null;
-            let end: Pos = null;
-            const walls: Array<Pos> = [];
-
-            for(let i = 0; i < cells.length; i++) {
-                for(let j = 0; j < cells[i].length; j++) {
-                    const cell = cells[i][j];
-                    switch(cell.type) {
-                        case "start":
-                            start = {x:j,y:i};
-                            break;
-                        case "end":
-                            end = {x:j,y:i};
-                            break;
-                        case "wall":
-                            walls.push({x:j,y:i})
-                            break;
-                    }
-                }
-            }
-
             return {
-                x: X,
-                y: Y,
-                start,
-                end,
-                walls
+                columns: boardState.columns,
+                rows: boardState.rows,
+                start: boardState.start,
+                end: boardState.end,
+                walls: boardState.walls
             }
         }
 
@@ -72,16 +50,19 @@ const App = () => {
             // update its checkCount by the amount
             return new Promise((res, rej) => {
                 if(cellUpdates) {
-                    const copy = [...cells];
+                    const newState = Object.assign({}, boardState);
+
                     cellUpdates.forEach(cu => {
-                        if(copy[cu.pos.y][cu.pos.x].checkCount == null) {
-                            copy[cu.pos.y][cu.pos.x].checkCount = cu.checkCountUpdate;
+                        // if this cell already has a checked value
+                        const checkedIndex = newState.checked.findIndex(c => c.pos.x == cu.pos.x && c.pos.y == cu.pos.y);
+                        if(checkedIndex > -1) {
+                            newState.checked[checkedIndex].count += cu.checkCountUpdate;
                         } else {
-                            copy[cu.pos.y][cu.pos.x].checkCount += cu.checkCountUpdate;
+                            newState.checked.push({pos: cu.pos, count: cu.checkCountUpdate});
                         }
                     });
-                    setCells(copy);
 
+                    setBoardState(newState);
                     setTimeout(res, RENDER_WAIT_DEFAULT);
                 } else {
                     res();
@@ -92,42 +73,35 @@ const App = () => {
         // add window.board api
         window.board = {
             cancelled: () => runningCancelled,
-            run: (pathfinderRunner: (
-                    settings: RunSettings, 
-                    updater: (cellUpdates: Array<CellUpdate>) => Promise<void>) => Promise<Array<Pos>>) => {
-
-                // reset the cell states
-                const copy = [...cells];
-                copy.forEach(row => row.forEach(cell => {
-                    cell.checkCount = 0;
-                    cell.shortestPath = false;
-                }));
-                setCells(copy);
+            updater,
+            run: (pathfinderRunner: (settings: RunSettings) => Promise<Array<Pos>>) => {
+                // reset the board state
+                setBoardState(s => {
+                    s.checked = [];
+                    s.shortestPath = [];
+                    return s;
+                });
 
                 // set that we're running, then call the runner function
                 setRunning(true);
 
-                pathfinderRunner(getSettingsForRun(), updater)
+                pathfinderRunner(getSettingsForRun())
                     .then(async path => {
                         setRunning(false);
                         setRunningCancelled(false);
 
                         // provides an array of positions in the shortest path, order is important
                         // if path not possible, null is provided
-                        const copy = [...cells];
-
-                        copy.forEach(row => row.filter(cell => cell.shortestPath).forEach(cell => cell.shortestPath = false));
-                        setCells(copy);
 
                         if(path) {
                             // each time i update one of the ones on the path, 
                             // i want to update the board
                             for(const pos of path) {
-                                const c = [...cells];
-                                c[pos.y][pos.x].shortestPath = true;
+                                const newState = Object.assign({}, boardState);
+                                newState.shortestPath.push(pos);
     
                                 await new Promise(res => setTimeout(() => {
-                                    setCells(c);
+                                    setBoardState(newState);
                                     res(null);
                                 }, RENDER_WAIT_DEFAULT));
                             }
@@ -135,11 +109,11 @@ const App = () => {
                     });
             }
         }
-    }, [cells, runningCancelled]);
+    }, [boardState, runningCancelled]);
 
     useEffect(() => {
-        saveGrid(cells);
-    }, [cells]);
+        saveBoardState(boardState);
+    }, [boardState]);
 
     useEffect(() => {
         saveCode(algo);
@@ -151,16 +125,20 @@ const App = () => {
             setRunningCancelled(true);
         } else {
             // ensure we have a start and a finish
-            const hasStart = cells.some(row => row.some(cell => cell.type === "start"));
-            const hasEnd = cells.some(row => row.some(cell => cell.type === "end"));
-
-            if(!hasStart || !hasEnd) {
+            if(!boardState.start || !boardState.end) {
                 return;
             }
-
+            
             // eval the editor code
             try {
-                eval(algo.code);
+                // add cancellable promise calling code here in string form and then ${algo.code} within
+                // the canceller should listen to setRunningCancelled and 
+
+                // wrap algo code in async function, 
+                // add canceller promise
+                // await algo code
+                const evaluator = new Function(algo.code);
+                evaluator();
             } catch (e) {
                 const error = e as Error;
                 console.error(error.stack);
@@ -194,7 +172,7 @@ const App = () => {
                 <Menu onAlgorithmChange={onAlgorithmChangeHandler} />
                 <ContentContainer>
                     <Editor code={algo.code} onCodeChange={onCodeChangeHandler} onReset={onResetHandler} />
-                    <Board cells={cells} onCellsChange={setCells} />
+                    <Board canEdit={!running} boardState={boardState} onBoardStateChange={setBoardState} />
                 </ContentContainer>
             </AppContainer>
         </ThemeProvider>

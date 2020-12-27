@@ -1,4 +1,4 @@
-import { Algo, Cells, CodeStorageService } from "@src/types";
+import { Algo, BoardState, Cells, CodeStorageService } from "@src/types";
 import { createContext } from "react";
 
 export const defaultCodeStorageContext : CodeStorageService = {
@@ -9,12 +9,12 @@ export const defaultCodeStorageContext : CodeStorageService = {
     saveCode: (code: { code: string, algo: Algo }) => {
         window.localStorage.setItem("code", JSON.stringify(code));
     },
-    getGrid: () => {
-        const raw = window.localStorage.getItem("grid");
-        return JSON.parse(raw) as Cells;
+    getBoardState: () => {
+        const raw = window.localStorage.getItem("boardState");
+        return JSON.parse(raw) as BoardState;
     },
-    saveGrid: (grid: Cells) => {
-        window.localStorage.setItem("grid", JSON.stringify(grid));
+    saveBoardState: (boardState: BoardState) => {
+        window.localStorage.setItem("boardState", JSON.stringify(boardState));
     }
 }
 

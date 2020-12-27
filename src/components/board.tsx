@@ -1,76 +1,56 @@
-import { useRadioGroup } from "@material-ui/core";
-import { Cells, CellType, Pos } from "@src/types";
+import { BoardState, Cell, Cells, CellType, Pos } from "@src/types";
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
 
 export interface BoardProps {
-    cells: Cells;
-    onCellsChange?: (newCells: Cells) => void;
+    onBoardStateChange: (newState: BoardState) => void;
+    boardState: BoardState;
+    canEdit: boolean;
 }
 
-const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => { 
+const createCell = (row: number, column: number, boardState: BoardState) : Cell => {
+    const { start, end, walls, checked, shortestPath } = boardState;
+
+    return {
+        type: start?.x === column && start?.y === row ? "start" :
+              end?.x === column && end?.y === row ? "end" :
+              walls.some(w => w.x === column && w.y === row) ? "wall" : 
+              null,
+        checkCount: checked.find(c => c.pos.x === column && c.pos.y === row)?.count,
+        shortestPath: shortestPath.some(sp => sp.x === column && sp.y === row)
+    }
+}
+
+const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }) => { 
     const [selectedPos, setSelectedPos] = useState<Pos>(null);
     const boardContainerRef = useRef<HTMLDivElement>();
     const [cellSize, setCellSize] = useState(0);
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
 
-    const actionHandler = (type: CellType, actionPos: Pos, actionCells: Cells, actionCellChange: (newCells: Cells) => void) => {
+    const actionHandler = (type: CellType, actionPos: Pos, actionState: BoardState, actionStateChange: (newState: BoardState) => void) => {
         switch(type) {
             case "start": {
-                let currentStart: Pos = null;
-
-                actionCells.forEach((column, y) => {
-                    column.forEach((c, x) => {
-                        if(c.type === "start") {
-                            currentStart = {x,y};
-                            return;
-                        }
-                    });
-                    if(currentStart) {
-                        return;
-                    }
-                });
-
-                if(currentStart) {
-                    const currentStartCell = actionCells[currentStart.y][currentStart.x];
-                    currentStartCell.type = null;
-                }
-
-                actionCells[actionPos.y][actionPos.x].type = "start";
-                actionCellChange(actionCells);
-
+                actionState.start = actionPos;
+                actionStateChange(actionState);
                 break;
             }
             case "wall": {
-                // find pos in cells, toggle wall flag
-                actionCells[actionPos.y][actionPos.x].type = actionCells[actionPos.y][actionPos.x].type === "wall" ? null : "wall";
-                actionCellChange(actionCells);
+                // find pos in state.walls
+                const existingWallIndex = actionState.walls.findIndex(w => w.x == actionPos.x && w.y == actionPos.y);
+                
+                // if it's there remove it, if not add it
+                if(existingWallIndex > -1) {
+                    actionState.walls.splice(existingWallIndex, 1);
+                } else {
+                    actionState.walls.push(actionPos);
+                }
+                actionStateChange(actionState);
                 break;
             }
             case "end": {
-                let currentEnd: Pos = null;
-
-                actionCells.forEach((column, y) => {
-                    column.forEach((c, x) => {
-                        if(c.type === "end") {
-                            currentEnd = {x,y};
-                            return;
-                        }
-                    });
-                    if(currentEnd) {
-                        return;
-                    }
-                });
-
-                if(currentEnd) {
-                    const currentEndCell = actionCells[currentEnd.y][currentEnd.x];
-                    currentEndCell.type = null;
-                }
-
-                actionCells[actionPos.y][actionPos.x].type = "end";
-                actionCellChange(actionCells);
-
+                actionState.end = actionPos;
+                actionStateChange(actionState);
                 break;
             }
             case "weight": {
@@ -82,7 +62,6 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
     useEffect(() => {
         // handle key presses for arrow keys to update the selected cell
         const arrowPressHandler = ({key}: KeyboardEvent) => {
-
             const watchedKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
 
             // don't continue if the key press isn't for one of the above
@@ -119,12 +98,12 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
             const rawY = selectedPos.y + yChange;
 
             const fixedX = rawX < 0 
-                ? cells[0].length - 1
-                : rawX > cells[0].length - 1 
+                ? boardState.columns - 1
+                : rawX > boardState.columns - 1 
                     ? 0 : rawX;
             const fixedY = rawY < 0
-                ? cells.length - 1
-                : rawY > cells.length - 1
+                ? boardState.rows - 1
+                : rawY > boardState.rows - 1
                     ? 0 : rawY;
 
             setSelectedPos({x: fixedX, y: fixedY});
@@ -134,7 +113,7 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
         const actionPressHandler = ({key}: KeyboardEvent) => {
             const handledKeys = ["s", "w", "e", "q"];
             // only do things if there is a selected cell or the key is in the above
-            if(!selectedPos || !handledKeys.includes(key)) {
+            if(!selectedPos || !handledKeys.includes(key) || !canEdit) {
                 return;
             }
 
@@ -153,8 +132,8 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
                     break;
             }
 
-            const copy = [...cells];
-            actionHandler(type, selectedPos, copy, onCellsChange);
+            const copy = Object.assign({}, boardState);
+            actionHandler(type, selectedPos, copy, onBoardStateChange);
         };
 
         window.addEventListener("keydown", arrowPressHandler);
@@ -164,7 +143,7 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
             window.removeEventListener("keydown", arrowPressHandler);
             window.removeEventListener("keydown", actionPressHandler);
         }
-    }, [selectedPos, cells]);
+    }, [selectedPos, boardState, canEdit]);
 
     useLayoutEffect(() => {
         const cellSizeHandler = () => {
@@ -174,8 +153,8 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
             if(boardContainerRef.current) {
                 const { height, width } = boardContainerRef.current.getBoundingClientRect();
 
-                const maxCellWidth = Math.floor(width / cells[0].length);
-                const maxCellHeight = Math.floor(height / cells.length);
+                const maxCellWidth = Math.floor(width / boardState.columns);
+                const maxCellHeight = Math.floor(height / boardState.rows);
 
                 const newCellSize = Math.min(maxCellHeight, maxCellWidth);
                 setCellSize(newCellSize);
@@ -200,9 +179,9 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
     }
 
     const onCellClick = (pos: Pos) => {
-        if(onClickSetType) {
-            const copy = [...cells];
-            actionHandler(onClickSetType, pos, copy, onCellsChange);
+        if(onClickSetType && canEdit) {
+            const copy = Object.assign({}, boardState);
+            actionHandler(onClickSetType, pos, copy, onBoardStateChange);
         }
     }
 
@@ -220,29 +199,30 @@ const Board: React.FC<BoardProps> = ({cells, onCellsChange}) => {
     }
 
     const onClearClick = () => {
-        const copy = [...cells];
-        copy.forEach(row => row.forEach(cell => {
-            cell.type = null;
-            cell.checkCount = 0;
-            cell.shortestPath = false;
-        }));
-        onCellsChange(copy);
+        const newState = Object.assign({}, boardState);
+        newState.checked = [];
+        newState.shortestPath = [];
+        newState.start = null;
+        newState.end = null;
+        newState.walls = [];
+        newState.weights = [];
+        onBoardStateChange(newState);
     }
 
     return (
         <OuterContainer>
             <BoardContainer role="board" ref={boardContainerRef}>
-                {cells.map((cellRow, iy) => (
+                {boardState.rows.enumerate(row => (
                     <CellRow>
-                        {cellRow.map((cell, ix) => (
+                        {boardState.columns.enumerate(col => (
                             <DisplayCell 
                                 size={cellSize}
-                                cell={cell}
-                                onMouseEnter={() => onCellEnter({x: ix, y: iy})}
+                                cell={createCell(row, col, boardState)}
+                                onMouseEnter={() => onCellEnter({x: col, y: row})}
                                 onMouseLeave={onCellLeave}
-                                onClick={() => onCellClick({x: ix, y: iy})}
-                                selected={selectedPos && ix === selectedPos.x && iy === selectedPos.y} 
-                                key={`${ix},${iy}`} />
+                                onClick={() => onCellClick({x: col, y: row})}
+                                selected={selectedPos && col === selectedPos.x && row === selectedPos.y} 
+                                key={`${col},${row}`} />
                             ))}
                     </CellRow>
                 ))}
