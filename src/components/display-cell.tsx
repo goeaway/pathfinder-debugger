@@ -1,3 +1,5 @@
+import { faPlay, faStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Cell } from "@src/types";
 import React from "react";
 import styled, { css } from "styled-components";
@@ -20,17 +22,15 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
             selected={selected} 
             onMouseEnter={onMouseEnter} 
             onMouseLeave={onMouseLeave}
-            onClick={onClick}    
+            onClick={onClick} 
+            wall={cell.type === "wall"}   
         >
             {/* Display Icon based on start/end/wall/weight */}
-            {cell.type === "wall" && (
-                <span>W</span>
-            )}
             {cell.type === "start" && (
-                <span>S</span>
+                <span><FontAwesomeIcon color={"#065F46"} icon={faPlay} /></span>
             )}
             {cell.type === "end" && (
-                <span>E</span>
+                <span><FontAwesomeIcon color={"#FCD34D"} icon={faStar} /></span>
             )}
         </Container>
     );
@@ -42,27 +42,28 @@ interface ContainerProps {
     selected?: boolean;
     checkCount?: number;
     shortestPath?: boolean;
+    wall?: boolean;
     size: number;
 }
 
 const Container = styled.span`
     width: ${(p: ContainerProps) => p.size}px;
     height: ${(p: ContainerProps) => p.size}px;
-    border: 1px solid black;
-    background: white;
+    background: #F3F4F6;
     cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
     position: relative;
+    border: 1px solid #1F2937;
 
     ${(p: ContainerProps) => p.checkCount > 0 && !p.shortestPath && css`
         &:after {
             position: absolute;
             
             content: "";
-            background: blue;
+            background: #2563EB;
             border-radius: 50%;
             width: ${(p: ContainerProps) => p.checkCount * 10}px;
             height: ${(p: ContainerProps) => p.checkCount * 10}px;
@@ -70,11 +71,15 @@ const Container = styled.span`
     `}
 
     ${(p: ContainerProps) => p.shortestPath && css`
-        background: yellow;
+        background: #FEF3C7;
     `}
 
     ${(p: ContainerProps) => p.selected && css`
-        background: lightblue;
+        background: #BFDBFE;
+    `}
+
+    ${(p: ContainerProps) => p.wall && css`
+        background: #111827;
     `}
 
     > * {

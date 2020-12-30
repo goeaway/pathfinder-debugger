@@ -7,6 +7,8 @@ import Menu from "./menu";
 import Dark from "@src/themes/dark";
 import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 
 const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     return {
@@ -167,7 +169,7 @@ const App = () => {
             <AppContainer role="app">
                 <TopBar>
                     <Title>Pathfinder Debugger</Title>
-                    <RunButton onClick={onRunHandler} running={running}>{(running ? "Stop" : "Run")}</RunButton>
+                    <RunButton onClick={onRunHandler} running={running}>{(running ? <><FontAwesomeIcon icon={faStop}/>&nbsp;&nbsp;Stop</> : <><FontAwesomeIcon icon={faPlay}/>&nbsp;&nbsp;Run</>)}</RunButton>
                 </TopBar>
                 <Menu onAlgorithmChange={onAlgorithmChangeHandler} />
                 <ContentContainer>
@@ -187,6 +189,8 @@ const AppContainer = styled.div`
     flex-direction: column;
     align-items: center;
     height: 100%;
+    padding: .25rem;
+    background: #F3F4F6;
 
     > * {
         width: 100%;
@@ -209,7 +213,7 @@ const TopBar = styled.div`
     justify-content: space-between;
     grid-column-start: 1;
     grid-column-end: 3;
-    border-bottom: 1px solid black;
+    margin-bottom: .25rem;
 `
 interface RunButtonProps {
     running?: boolean;
@@ -217,17 +221,21 @@ interface RunButtonProps {
 
 const RunButton = styled.button`
     border: none;
+    border-radius: 6px;
     height: 50px;
     font-size: 16px;
     padding: 1rem;
     cursor: pointer;
     transition: background 300ms ease;
-
-    background: ${(p: RunButtonProps) => p.running ? "red" : "green"};
     color: white;
+    outline: none;
+
+    background: ${(p: RunButtonProps) => p.running ? "rgb(220,38,38)" : "rgb(52,211,153)"};
+    background: ${(p: RunButtonProps) => p.running ? "linear-gradient(126deg, rgba(220,38,38,1) 0%, rgba(153,27,27,1) 100%)" : "linear-gradient(126deg, rgba(5,150,105,1) 0%, rgba(6,95,70,1) 100%)"}; 
 
     &:hover {
-        background: ${(p: RunButtonProps) => p.running ? "darkred" : "darkgreen"};
+        background: ${(p: RunButtonProps) => p.running ? "rgb(220,38,38)" : "rgb(5,150,105)"};
+        background: ${(p: RunButtonProps) => p.running ? "linear-gradient(346deg, rgba(220,38,38,1) 0%, rgba(153,27,27,1) 100%)" : "linear-gradient(346deg, rgba(5,150,105,1) 0%, rgba(6,95,70,1) 100%);"};
     }
 `
 
@@ -235,18 +243,20 @@ const ContentContainer = styled.div`
     height: 100%;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
 
     @media(min-width:${p => p.theme.breakpoints.sm}px) {
-        flex-direction: row;
-        overflow-y: hidden;
-        overflow-x: auto;
+        display: grid;
+        grid-template-columns: 50% 50%;
     }
 `
 
 const Title = styled.h1`
     font-size: 30px;
     line-height: 40px;
-    padding: .3rem 1rem;
+    padding: 0;
     margin: 0;
+    
+    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+        padding: .3rem 1rem;
+    }
 `

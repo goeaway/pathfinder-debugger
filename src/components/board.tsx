@@ -24,7 +24,7 @@ const createCell = (row: number, column: number, boardState: BoardState) : Cell 
 
 const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }) => { 
     const [selectedPos, setSelectedPos] = useState<Pos>(null);
-    const boardContainerRef = useRef<HTMLDivElement>();
+    const outerContainerRef = useRef<HTMLDivElement>();
     const [cellSize, setCellSize] = useState(0);
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
 
@@ -150,11 +150,15 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }
             // get smallest of height and width of board container
             // divide that by the amount of cells we have in that dimension
             // set cellSize to be that calc
-            if(boardContainerRef.current) {
-                const { height, width } = boardContainerRef.current.getBoundingClientRect();
+            if(outerContainerRef.current) {
+                const { height, width } = outerContainerRef.current.getBoundingClientRect();
 
-                const maxCellWidth = Math.floor(width / boardState.columns);
-                const maxCellHeight = Math.floor(height / boardState.rows);
+                const outerContainerStyle = getComputedStyle(outerContainerRef.current);
+                const paddingHorizontal = parseFloat(outerContainerStyle.paddingLeft) + parseFloat(outerContainerStyle.paddingRight);
+                const paddingVertical = parseFloat(outerContainerStyle.paddingTop) + parseFloat(outerContainerStyle.paddingBottom);
+
+                const maxCellWidth = Math.floor((width - paddingHorizontal) / boardState.columns);
+                const maxCellHeight = Math.floor((height - paddingVertical) / boardState.rows);
 
                 const newCellSize = Math.min(maxCellHeight, maxCellWidth);
                 setCellSize(newCellSize);
@@ -210,27 +214,27 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }
     }
 
     return (
-        <OuterContainer>
-            <BoardContainer role="board" ref={boardContainerRef}>
+        <OuterContainer ref={outerContainerRef}>
+            <BoardContainer role="board">
                 {boardState.rows.enumerate(row => (
                     <CellRow>
                         {boardState.columns.enumerate(col => (
                             <DisplayCell 
-                                size={cellSize}
-                                cell={createCell(row, col, boardState)}
-                                onMouseEnter={() => onCellEnter({x: col, y: row})}
-                                onMouseLeave={onCellLeave}
+                            size={cellSize}
+                            cell={createCell(row, col, boardState)}
+                            onMouseEnter={() => onCellEnter({x: col, y: row})}
+                            onMouseLeave={onCellLeave}
                                 onClick={() => onCellClick({x: col, y: row})}
                                 selected={selectedPos && col === selectedPos.x && row === selectedPos.y} 
                                 key={`${col},${row}`} />
-                            ))}
+                                ))}
                     </CellRow>
                 ))}
             </BoardContainer>
-            <Controls>
+            {/* <Controls>
                 <button type="button" onClick={onTypeChangeClick}>{onClickSetType}</button>
                 <button type="button" onClick={onClearClick}>Clear</button>
-            </Controls>
+            </Controls> */}
         </OuterContainer>
     );
 }
@@ -241,9 +245,8 @@ const OuterContainer = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-grow: 3;
-    padding: 2rem; 
-    flex-direction: column;
+    padding: 0 1rem;
+    overflow: hidden;
 `
 
 const Controls = styled.div`
@@ -251,14 +254,42 @@ const Controls = styled.div`
 `
 
 const BoardContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    justify-content: center;
+    display: inline-block;
 `
 
 const CellRow = styled.div`
     display: flex;
     justify-content: center;
+
+    &:first-child > * {
+        border-top: 2px solid #1F2937;
+
+        &:first-child {
+            border-top-left-radius: 6px;
+        }
+
+        &:last-child {
+            border-top-right-radius: 6px;
+        }
+    }
+
+    &:last-child > * {
+        border-bottom: 2px solid #1F2937;
+
+        &:first-child {
+            border-bottom-left-radius: 6px;
+        }
+
+        &:last-child {
+            border-bottom-right-radius: 6px;
+        }
+    }
+
+    & > *:first-child {
+        border-left: 2px solid #1F2937;
+    }
+
+    & > *:last-child {
+        border-right: 2px solid #1F2937;
+    }
 `
