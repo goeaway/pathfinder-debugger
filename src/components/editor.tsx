@@ -9,10 +9,9 @@ import styled from "styled-components";
 export interface EditorProps {
     code: string;
     onCodeChange: (value: string) => void;
-    onReset: () => void;
 }
 
-const Editor : React.FC<EditorProps> = ({code, onCodeChange, onReset}) => {
+const Editor : React.FC<EditorProps> = ({code, onCodeChange}) => {
     return (
         <Container>
             
@@ -31,9 +30,6 @@ const Editor : React.FC<EditorProps> = ({code, onCodeChange, onReset}) => {
                     tabSize: 4
                 }}
             />
-            <Controls>
-                <button type="button" onClick={onReset}>Reset</button>
-            </Controls>
         </Container>
     );
 }
@@ -49,17 +45,5 @@ const Container = styled.div`
     #code-editor {
         border-radius: 6px;
         border: 1px solid #D1D5DB;
-        box-shadow:
-  0 2.8px 2.2px rgba(0, 0, 0, 0.02),
-  0 6.7px 5.3px rgba(0, 0, 0, 0.028),
-  0 12.5px 10px rgba(0, 0, 0, 0.035),
-  0 22.3px 17.9px rgba(0, 0, 0, 0.042),
-  0 41.8px 33.4px rgba(0, 0, 0, 0.05),
-  0 100px 80px rgba(0, 0, 0, 0.07)
-;
     }
-`
-
-const Controls = styled.div`
-    padding: .5rem 0;   
 `

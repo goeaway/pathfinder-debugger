@@ -28,8 +28,6 @@ const Menu : React.FC<MenuProps> = ({onAlgorithmChange}) => {
 export default Menu;
 
 const Container = styled.div`
-    padding: 0 1rem;
-    
     @media(min-width:${p => p.theme.breakpoints.sm}px) {
         height: 100%;
     }

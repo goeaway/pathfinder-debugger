@@ -1,4 +1,4 @@
-import { Algo, BoardState, Cell, Cells, CellUpdate, Pos, RunSettings } from "@src/types";
+import { Algo, BoardState, Cell, Cells, CellType, CellUpdate, Pos, RunSettings } from "@src/types";
 import React, { useEffect, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
@@ -8,7 +8,10 @@ import Dark from "@src/themes/dark";
 import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faChessBoard, faCode, faHiking, faMinusCircle, faMountain, faPlay, faRoute, faStar, faStop, faTree } from "@fortawesome/free-solid-svg-icons";
+import toast, { Toaster } from "react-hot-toast";
+import IconButton from "./icon-button";
+import { IconProp } from "@fortawesome/fontawesome-svg-core";
 
 const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     return {
@@ -33,6 +36,7 @@ const App = () => {
     const [algo, setAlgo] = useState<{algo: Algo, code: string}>(getCode() || { algo: algorithms[0], code: ""});
     const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(ROWS, COLUMNS));
     const [runningCancelled, setRunningCancelled] = useState(false);
+    const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
 
     useEffect(() => {
         const getSettingsForRun = () : RunSettings => {
@@ -90,24 +94,36 @@ const App = () => {
                 pathfinderRunner(getSettingsForRun())
                     .then(async path => {
                         setRunning(false);
-                        setRunningCancelled(false);
-
+                        
                         // provides an array of positions in the shortest path, order is important
                         // if path not possible, null is provided
-
+                        
                         if(path) {
                             // each time i update one of the ones on the path, 
                             // i want to update the board
                             for(const pos of path) {
                                 const newState = Object.assign({}, boardState);
                                 newState.shortestPath.push(pos);
-    
+                                
                                 await new Promise(res => setTimeout(() => {
                                     setBoardState(newState);
                                     res(null);
                                 }, RENDER_WAIT_DEFAULT));
                             }
+
+                            toast(`${path.length -1} step path found`, 
+                                { 
+                                    duration: 5000,
+                                    icon: <>
+                                        <FontAwesomeIcon icon={faRoute} />
+                                    </>
+                                }
+                            );
+                        } else {
+                            toast.error("No path could be found", { duration: 5000 });
                         }
+
+                        setRunningCancelled(false);
                     });
             }
         }
@@ -125,6 +141,10 @@ const App = () => {
         if(running) {
             // cancel running
             setRunningCancelled(true);
+            toast("Run Stopped", {
+                icon: <FontAwesomeIcon icon={faStop} color="#B91C1C"/>,
+                duration: 2000
+            });
         } else {
             // ensure we have a start and a finish
             if(!boardState.start || !boardState.end) {
@@ -143,7 +163,17 @@ const App = () => {
                 evaluator();
             } catch (e) {
                 const error = e as Error;
-                console.error(error.stack);
+                toast.error(
+                    <div>
+                        <div>
+                            Error occurred when running algorithm
+                        </div>
+                        <pre>
+                            {error.message}
+                        </pre>
+                    </div>, {
+                    duration: 8000
+                });
             }
         }
     };
@@ -158,23 +188,109 @@ const App = () => {
         setAlgo({ algo, code: algo.source});
     }
 
-    const onResetHandler = () => {
+    const onCodeResetHandler = () => {
         const newAlgo = Object.assign({}, algo);
         newAlgo.code = algo.algo.source;
         setAlgo(newAlgo);
+
+        toast("Code Reset", {
+            duration: 5000,
+            icon: <FontAwesomeIcon icon={faCode} />
+        });
+    }
+
+    const onBoardResetHandler = () => {
+        const newState = Object.assign({}, boardState);
+        newState.checked = [];
+        newState.shortestPath = [];
+        newState.start = null;
+        newState.end = null;
+        newState.walls = [];
+        newState.weights = [];
+        setBoardState(newState);
+
+        toast("Reset Board", {
+            duration: 5000,
+            icon: <FontAwesomeIcon icon={faChessBoard} />
+        });
+    }
+
+    const onTypeChangeClick = () => {
+        let toastMessage = "";
+        let toastIcon: IconProp = null;
+        switch(onClickSetType) {
+            case "start":
+                setOnClickSetType("end");
+                toastMessage = "Set the end position on the board";
+                toastIcon = faCampground;
+                break;
+            case "end":
+                setOnClickSetType("wall");
+                toastMessage = "Add walls to the board";
+                toastIcon = faMountain;
+                break;
+            case "wall":
+                setOnClickSetType("weight");
+                toastMessage = "Add weights to the board";
+                toastIcon = faTree;
+                break;
+            case "weight":
+                setOnClickSetType("start");
+                toastMessage = "Set the start position on the board";
+                toastIcon = faHiking;
+                break;
+        }
+
+        toast(toastMessage, { duration: 2000, icon: <FontAwesomeIcon icon={toastIcon} />})
+    }
+
+    const getSettingIcon = () => {
+        switch(onClickSetType) {
+            case "start":
+                return faHiking;
+            case "end":
+                return faCampground;
+            case "wall": 
+                return faMountain;
+            case "weight": 
+                return faTree;
+        }
+    }
+
+    const getSettingTitle = () => {
+        switch(onClickSetType) {
+            case "start":
+                return "Click on a cell on the board to set the start";
+            case "end":
+                return "Click on a cell on the board to set the end";
+            case "wall": 
+                return "Click on a cell on the board to add a wall there";
+            case "weight":
+                return "Click on a cell on the board to add a weight there";
+        }
     }
 
     return (
         <ThemeProvider theme={Dark}>
             <AppContainer role="app">
+                <Toaster toastOptions={{className: "notifications"}} />
                 <TopBar>
                     <Title>Pathfinder Debugger</Title>
-                    <RunButton onClick={onRunHandler} running={running}>{(running ? <><FontAwesomeIcon icon={faStop}/>&nbsp;&nbsp;Stop</> : <><FontAwesomeIcon icon={faPlay}/>&nbsp;&nbsp;Run</>)}</RunButton>
+                    <Controls>
+                        <IconButton icon={faCode} onClick={onCodeResetHandler} title="Reset your code" />
+                        <IconButton icon={faChessBoard} onClick={onBoardResetHandler} title="Reset the board" />
+                        <IconButton icon={getSettingIcon()} onClick={onTypeChangeClick} title={getSettingTitle()} />
+                        <RunButton 
+                            onClick={onRunHandler} 
+                            running={running}>
+                                {(running ? <><FontAwesomeIcon icon={faStop}/>&nbsp;&nbsp;Stop</> : <><FontAwesomeIcon icon={faPlay}/>&nbsp;&nbsp;Run</>)}
+                        </RunButton>
+                    </Controls>
                 </TopBar>
                 <Menu onAlgorithmChange={onAlgorithmChangeHandler} />
                 <ContentContainer>
-                    <Editor code={algo.code} onCodeChange={onCodeChangeHandler} onReset={onResetHandler} />
-                    <Board canEdit={!running} boardState={boardState} onBoardStateChange={setBoardState} />
+                    <Editor code={algo.code} onCodeChange={onCodeChangeHandler} />
+                    <Board canEdit={!running} boardState={boardState} onBoardStateChange={setBoardState} onCellClickType={onClickSetType} />
                 </ContentContainer>
             </AppContainer>
         </ThemeProvider>
@@ -189,7 +305,7 @@ const AppContainer = styled.div`
     flex-direction: column;
     align-items: center;
     height: 100%;
-    padding: .25rem;
+    padding: .5rem;
     background: #F3F4F6;
 
     > * {
@@ -205,6 +321,10 @@ const AppContainer = styled.div`
         grid-template-rows: min-content auto;
         grid-template-columns: 90px auto;
     }
+
+    .notifications {
+        opacity: 1 !important;
+    }
 `
 
 const TopBar = styled.div`
@@ -213,8 +333,16 @@ const TopBar = styled.div`
     justify-content: space-between;
     grid-column-start: 1;
     grid-column-end: 3;
-    margin-bottom: .25rem;
+    margin-bottom: .5rem;
 `
+
+const Controls = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+`
+
 interface RunButtonProps {
     running?: boolean;
 }
@@ -255,8 +383,4 @@ const Title = styled.h1`
     line-height: 40px;
     padding: 0;
     margin: 0;
-    
-    @media(min-width:${p => p.theme.breakpoints.sm}px) {
-        padding: .3rem 1rem;
-    }
 `

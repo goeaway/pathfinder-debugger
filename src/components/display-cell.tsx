@@ -1,4 +1,4 @@
-import { faPlay, faStar } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faHiking, faMountain, faPlay, faStar, faTree } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Cell } from "@src/types";
 import React from "react";
@@ -23,14 +23,19 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
             onMouseEnter={onMouseEnter} 
             onMouseLeave={onMouseLeave}
             onClick={onClick} 
-            wall={cell.type === "wall"}   
         >
             {/* Display Icon based on start/end/wall/weight */}
             {cell.type === "start" && (
-                <span><FontAwesomeIcon color={"#065F46"} icon={faPlay} /></span>
+                <span><FontAwesomeIcon color="#065F46" size="lg" icon={faHiking} /></span>
             )}
             {cell.type === "end" && (
-                <span><FontAwesomeIcon color={"#FCD34D"} icon={faStar} /></span>
+                <span><FontAwesomeIcon color="#1F2937" icon={faCampground} /></span>
+            )}
+            {cell.type === "wall" && (
+                <span><FontAwesomeIcon color="#374151" icon={faMountain} size="lg" /></span>
+            )}
+            {cell.type === "weight" && (
+                <span><FontAwesomeIcon color="#065F46" icon={faTree} size="lg" /></span>
             )}
         </Container>
     );
@@ -42,7 +47,6 @@ interface ContainerProps {
     selected?: boolean;
     checkCount?: number;
     shortestPath?: boolean;
-    wall?: boolean;
     size: number;
 }
 
@@ -76,10 +80,6 @@ const Container = styled.span`
 
     ${(p: ContainerProps) => p.selected && css`
         background: #BFDBFE;
-    `}
-
-    ${(p: ContainerProps) => p.wall && css`
-        background: #111827;
     `}
 
     > * {

@@ -7,26 +7,27 @@ export interface BoardProps {
     onBoardStateChange: (newState: BoardState) => void;
     boardState: BoardState;
     canEdit: boolean;
+    onCellClickType: CellType;
 }
 
 const createCell = (row: number, column: number, boardState: BoardState) : Cell => {
-    const { start, end, walls, checked, shortestPath } = boardState;
+    const { start, end, walls, weights, checked, shortestPath } = boardState;
 
     return {
         type: start?.x === column && start?.y === row ? "start" :
               end?.x === column && end?.y === row ? "end" :
               walls.some(w => w.x === column && w.y === row) ? "wall" : 
+              weights.some(w => w.x === column && w.y === row) ? "weight" :
               null,
         checkCount: checked.find(c => c.pos.x === column && c.pos.y === row)?.count,
         shortestPath: shortestPath.some(sp => sp.x === column && sp.y === row)
     }
 }
 
-const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }) => { 
+const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, onCellClickType }) => { 
     const [selectedPos, setSelectedPos] = useState<Pos>(null);
     const outerContainerRef = useRef<HTMLDivElement>();
     const [cellSize, setCellSize] = useState(0);
-    const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
 
     const actionHandler = (type: CellType, actionPos: Pos, actionState: BoardState, actionStateChange: (newState: BoardState) => void) => {
         switch(type) {
@@ -54,6 +55,16 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }
                 break;
             }
             case "weight": {
+                // find pos in state.weights
+                const existingWeightIndex = actionState.weights.findIndex(w => w.x == actionPos.x && w.y == actionPos.y);
+                
+                // if it's there remove it, if not add it
+                if(existingWeightIndex > -1) {
+                    actionState.weights.splice(existingWeightIndex, 1);
+                } else {
+                    actionState.weights.push(actionPos);
+                }
+                actionStateChange(actionState);
                 break;
             }
         }
@@ -129,6 +140,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }
                     type = "wall";
                     break;
                 case "q":
+                    type = "weight";
                     break;
             }
 
@@ -183,34 +195,10 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }
     }
 
     const onCellClick = (pos: Pos) => {
-        if(onClickSetType && canEdit) {
+        if(onCellClickType && canEdit) {
             const copy = Object.assign({}, boardState);
-            actionHandler(onClickSetType, pos, copy, onBoardStateChange);
+            actionHandler(onCellClickType, pos, copy, onBoardStateChange);
         }
-    }
-
-    const onTypeChangeClick = () => {
-        switch(onClickSetType) {
-            case "start":
-                setOnClickSetType("end");
-                break;
-            case "end":
-                setOnClickSetType("wall");
-                break;
-            case "wall":
-                setOnClickSetType("start");
-        }
-    }
-
-    const onClearClick = () => {
-        const newState = Object.assign({}, boardState);
-        newState.checked = [];
-        newState.shortestPath = [];
-        newState.start = null;
-        newState.end = null;
-        newState.walls = [];
-        newState.weights = [];
-        onBoardStateChange(newState);
     }
 
     return (
@@ -231,10 +219,6 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }
                     </CellRow>
                 ))}
             </BoardContainer>
-            {/* <Controls>
-                <button type="button" onClick={onTypeChangeClick}>{onClickSetType}</button>
-                <button type="button" onClick={onClearClick}>Clear</button>
-            </Controls> */}
         </OuterContainer>
     );
 }
@@ -242,15 +226,14 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit }
 export default Board;
 
 const OuterContainer = styled.div`
+    flex-grow: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 0 1rem;
     overflow: hidden;
-`
-
-const Controls = styled.div`
-    padding: .5rem;
+    
+    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+        justify-content: flex-end;
+    }
 `
 
 const BoardContainer = styled.div`
