@@ -1,5 +1,5 @@
 import { Algo, BoardState, Cell, Cells, CellType, CellUpdate, Pos, RunSettings } from "@src/types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
 import Editor from "./editor";
@@ -8,10 +8,12 @@ import Dark from "@src/themes/dark";
 import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCampground, faChessBoard, faCode, faHiking, faMinusCircle, faMountain, faPlay, faRoute, faStar, faStop, faTree } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faChessBoard, faCode, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faStar, faStop, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
 import toast, { Toaster } from "react-hot-toast";
 import IconButton from "./icon-button";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
+import { HiddenXs } from "@src/utility-components";
+import Popover from "./popover";
 
 const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     return {
@@ -37,6 +39,8 @@ const App = () => {
     const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(ROWS, COLUMNS));
     const [runningCancelled, setRunningCancelled] = useState(false);
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
+    const [showHelp, setShowHelp] = useState(false);
+    const helpButtonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         const getSettingsForRun = () : RunSettings => {
@@ -46,7 +50,8 @@ const App = () => {
                 rows: boardState.rows,
                 start: boardState.start,
                 end: boardState.end,
-                walls: boardState.walls
+                walls: boardState.walls,
+                weights: boardState.weights
             }
         }
 
@@ -114,9 +119,7 @@ const App = () => {
                             toast(`${path.length -1} step path found`, 
                                 { 
                                     duration: 5000,
-                                    icon: <>
-                                        <FontAwesomeIcon icon={faRoute} />
-                                    </>
+                                    icon: <FontAwesomeIcon icon={faRoute} />
                                 }
                             );
                         } else {
@@ -146,8 +149,28 @@ const App = () => {
                 duration: 2000
             });
         } else {
+            const hasStart = !!boardState.start;
+            const hasEnd = !!boardState.end;
             // ensure we have a start and a finish
-            if(!boardState.start || !boardState.end) {
+            if(!hasStart || !hasEnd) {
+                let message = "";
+                let icon = null;
+
+                if(!hasStart && !hasEnd) {
+                    message = "Add a start and end to the board.";
+                    icon = faExclamationTriangle;
+                } else if (!hasStart) {
+                    message = "Add a start to the board.";
+                    icon = faHiking;
+                } else {
+                    message = "Add an end to the board.";
+                    icon = faCampground;
+                }
+
+                toast(message, {
+                    icon: <FontAwesomeIcon icon={icon} />,
+                    duration: 5000
+                });
                 return;
             }
             
@@ -195,7 +218,7 @@ const App = () => {
 
         toast("Code Reset", {
             duration: 5000,
-            icon: <FontAwesomeIcon icon={faCode} />
+            icon: <FontAwesomeIcon icon={faUndo} />
         });
     }
 
@@ -209,9 +232,9 @@ const App = () => {
         newState.weights = [];
         setBoardState(newState);
 
-        toast("Reset Board", {
+        toast("Board Reset", {
             duration: 5000,
-            icon: <FontAwesomeIcon icon={faChessBoard} />
+            icon: <FontAwesomeIcon icon={faUndoAlt} />
         });
     }
 
@@ -244,6 +267,14 @@ const App = () => {
         toast(toastMessage, { duration: 2000, icon: <FontAwesomeIcon icon={toastIcon} />})
     }
 
+    const onHelpClickHandler = () => {
+        setShowHelp(s => !s);
+    }
+
+    const onHelpDismissHandler = () => {
+        setShowHelp(false);
+    }
+
     const getSettingIcon = () => {
         switch(onClickSetType) {
             case "start":
@@ -258,15 +289,16 @@ const App = () => {
     }
 
     const getSettingTitle = () => {
+        const base = "Click here to cycle tile types."
         switch(onClickSetType) {
             case "start":
-                return "Click on a cell on the board to set the start";
+                return "Click a cell to set the start. " + base;
             case "end":
-                return "Click on a cell on the board to set the end";
+                return "Click a cell to set the end. " + base;
             case "wall": 
-                return "Click on a cell on the board to add a wall there";
+                return "Click a cell to add a wall there. " + base;
             case "weight":
-                return "Click on a cell on the board to add a weight there";
+                return "Click a cell to add a weight there. " + base;
         }
     }
 
@@ -275,15 +307,54 @@ const App = () => {
             <AppContainer role="app">
                 <Toaster toastOptions={{className: "notifications"}} />
                 <TopBar>
-                    <Title>Pathfinder Debugger</Title>
+                    <Popover show={showHelp} onDismissed={onHelpDismissHandler} handle={helpButtonRef} position="bottomleft">
+                        <PopoverContent>
+                            <HelpText>
+                                Add a Start, End, Walls and Weights to the board.
+                            </HelpText>
+                            <HelpText>
+                                Then Run the algorithm of your choice and see how it performs.
+                            </HelpText>
+                            <HelpText>
+                                Start&nbsp;<FontAwesomeIcon icon={faHiking} />
+                            </HelpText>
+                            <HelpTextSmall>
+                                This is where the algorithm should start from. Press S while selecting a cell to add.    
+                            </HelpTextSmall>
+                            <HelpText>
+                                End&nbsp;<FontAwesomeIcon icon={faCampground} />
+                            </HelpText>
+                            <HelpTextSmall>
+                                This is where the algorithm should end at. Press E while selecting a cell to add.
+                            </HelpTextSmall>
+                            <HelpText>
+                                Wall&nbsp;<FontAwesomeIcon icon={faMountain} />
+                            </HelpText>
+                            <HelpTextSmall>
+                                These are cells the algorithm is not allowed to pass through. Press W while selecting a cell to add.
+                            </HelpTextSmall>
+                            <HelpText>
+                                Weight&nbsp;<FontAwesomeIcon icon={faTree} />
+                            </HelpText>
+                            <HelpTextSmall>
+                                These are cells the algorithm can pass through but are more costly. Press Q while selecting a cell to add.
+                            </HelpTextSmall>
+                        </PopoverContent>
+                    </Popover>
+                    <TitleSection>
+                        <Title>Pathfinder Debugger</Title>
+                        <Description>Test pre made or custom pathdfinding algorithms with this online tool.</Description>
+                    </TitleSection>
                     <Controls>
-                        <IconButton icon={faCode} onClick={onCodeResetHandler} title="Reset your code" />
-                        <IconButton icon={faChessBoard} onClick={onBoardResetHandler} title="Reset the board" />
-                        <IconButton icon={getSettingIcon()} onClick={onTypeChangeClick} title={getSettingTitle()} />
+                        <IconButton icon={faQuestion} onClick={onHelpClickHandler} title="Help" ref={helpButtonRef} />
+                        <IconButton icon={faCode} secondaryIcon={faUndoAlt} onClick={onCodeResetHandler} title="Reset your code" />
+                        <IconButton icon={faChessBoard} secondaryIcon={faUndoAlt} onClick={onBoardResetHandler} title="Reset the board" />
+                        <IconButton icon={getSettingIcon()} secondaryIcon={faPlusCircle} onClick={onTypeChangeClick} title={getSettingTitle()} />
                         <RunButton 
+                            title={running ? "Stop the run" : "Run the code to test the algorithm"}
                             onClick={onRunHandler} 
                             running={running}>
-                                {(running ? <><FontAwesomeIcon icon={faStop}/>&nbsp;&nbsp;Stop</> : <><FontAwesomeIcon icon={faPlay}/>&nbsp;&nbsp;Run</>)}
+                                {(running ? <><FontAwesomeIcon icon={faStop}/><HiddenXs>&nbsp;&nbsp;Stop</HiddenXs></> : <><FontAwesomeIcon icon={faPlay}/><HiddenXs>&nbsp;&nbsp;Run</HiddenXs></>)}
                         </RunButton>
                     </Controls>
                 </TopBar>
@@ -301,6 +372,7 @@ export default App;
 
 const AppContainer = styled.div`
     font-family: 'Roboto', sans-serif;
+    color: #1F2937;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -319,7 +391,7 @@ const AppContainer = styled.div`
     @media(min-width:${p => p.theme.breakpoints.sm}px) {
         display: grid;
         grid-template-rows: min-content auto;
-        grid-template-columns: 90px auto;
+        grid-template-columns: 120px auto;
     }
 
     .notifications {
@@ -378,9 +450,38 @@ const ContentContainer = styled.div`
     }
 `
 
+const TitleSection = styled.div`
+    display: flex;
+    flex-direction: column;
+    padding-right: 1rem;
+`
+    
+const Description = styled.div`
+    font-size: 14px;
+    color: #4B5563;
+`
+    
 const Title = styled.h1`
+    
     font-size: 30px;
     line-height: 40px;
     padding: 0;
     margin: 0;
+`
+
+const PopoverContent = styled.div`
+    display: flex;
+    flex-direction: column;
+`
+
+const HelpText = styled.p`
+    display: flex;
+    margin: .5rem 0;
+`
+
+const HelpTextSmall = styled.p`
+    margin: 0;
+    margin-bottom: .5rem;
+    font-size: 14px;
+    color: #6B7280;
 `

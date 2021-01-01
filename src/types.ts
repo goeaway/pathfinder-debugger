@@ -19,7 +19,7 @@ export interface BoardState {
     shortestPath: Array<Pos>;
 }
 
-export type RunSettings = Pick<BoardState, "start" | "end" | "walls" | "rows" | "columns">;
+export type RunSettings = Pick<BoardState, "start" | "end" | "walls" | "weights" | "rows" | "columns">;
 
 export interface CellUpdate {
     pos: Pos;
@@ -31,10 +31,13 @@ export interface Pos {
     y: number;
 }
 
+export type AlgoType = "custom" | "weighted" | "unweighted";
+
 export interface Algo {
     id: string;
     name: string;
     source: string;
+    type: AlgoType;
 }
 
 export interface Theme {
@@ -67,3 +70,5 @@ export interface CodeStorageService {
     getBoardState: () => BoardState;
     saveBoardState: (boardState: BoardState) => void;
 }
+
+export type PopoverPosition = "bottom" | "bottomright" | "bottomleft";

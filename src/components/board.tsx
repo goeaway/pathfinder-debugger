@@ -2,6 +2,7 @@ import { BoardState, Cell, Cells, CellType, Pos } from "@src/types";
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
+import Tooltip from "./tooltip";
 
 export interface BoardProps {
     onBoardStateChange: (newState: BoardState) => void;
@@ -26,8 +27,9 @@ const createCell = (row: number, column: number, boardState: BoardState) : Cell 
 
 const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, onCellClickType }) => { 
     const [selectedPos, setSelectedPos] = useState<Pos>(null);
-    const outerContainerRef = useRef<HTMLDivElement>();
     const [cellSize, setCellSize] = useState(0);
+    const [showTooltip, setShowTooltip] = useState(false);
+    const outerContainerRef = useRef<HTMLDivElement>();
 
     const actionHandler = (type: CellType, actionPos: Pos, actionState: BoardState, actionStateChange: (newState: BoardState) => void) => {
         switch(type) {
@@ -185,7 +187,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             window.removeEventListener("resize", cellSizeHandler);
         }
     }, []);
-    
+
     const onCellEnter = (pos: Pos) => {
         setSelectedPos(pos);
     }
@@ -203,19 +205,25 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
 
     return (
         <OuterContainer ref={outerContainerRef}>
+            <Tooltip 
+                show={!!selectedPos}
+            >
+                {selectedPos?.x}
+            </Tooltip>
             <BoardContainer role="board">
                 {boardState.rows.enumerate(row => (
                     <CellRow>
                         {boardState.columns.enumerate(col => (
                             <DisplayCell 
-                            size={cellSize}
-                            cell={createCell(row, col, boardState)}
-                            onMouseEnter={() => onCellEnter({x: col, y: row})}
-                            onMouseLeave={onCellLeave}
+                                size={cellSize}
+                                cell={createCell(row, col, boardState)}
+                                onMouseEnter={() => onCellEnter({x: col, y: row})}
+                                onMouseLeave={onCellLeave}
                                 onClick={() => onCellClick({x: col, y: row})}
                                 selected={selectedPos && col === selectedPos.x && row === selectedPos.y} 
-                                key={`${col},${row}`} />
-                                ))}
+                                key={`${col},${row}`} 
+                            />
+                        ))}
                     </CellRow>
                 ))}
             </BoardContainer>
@@ -230,9 +238,11 @@ const OuterContainer = styled.div`
     display: flex;
     justify-content: center;
     overflow: hidden;
+    padding-top: 1rem;
     
     @media(min-width:${p => p.theme.breakpoints.sm}px) {
         justify-content: flex-end;
+        padding-top: 0;
     }
 `
 

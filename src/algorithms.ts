@@ -4,6 +4,7 @@ const algorithms : Array<Algo> = [
     {
         id: "astar",
         name: "A Star",
+        type: "unweighted",
         source: `board.run(algorithm);
 
 async function algorithm(settings) {
@@ -124,10 +125,11 @@ function getSmallest(nodes) {
     {
         id: "custom",
         name: "Custom",
+        type: "custom",
         source: `board.run(algorithm);
         
 async function algorithm(settings) {
-    const { columns, rows, start, end, walls } = settings;
+    const { columns, rows, start, end, walls, weights } = settings;
     // add your code here   
     // call updater within your algorithm to update the board whenever you want
     // await board.updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);

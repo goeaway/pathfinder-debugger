@@ -1,7 +1,8 @@
 import { faCampground, faHiking, faMountain, faPlay, faStar, faTree } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Cell } from "@src/types";
-import React from "react";
+import React, { ForwardedRef } from "react";
+import { MutableRefObject } from "react";
 import styled, { css } from "styled-components";
 
 export interface CellProps {
@@ -11,6 +12,7 @@ export interface CellProps {
     onMouseLeave?: () => void;
     onClick?: () => void;
     size: number;
+    ref?: ForwardedRef<HTMLDivElement>;
 }
 
 const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouseLeave, onClick, size}) => {
@@ -29,7 +31,7 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
                 <span><FontAwesomeIcon color="#065F46" size="lg" icon={faHiking} /></span>
             )}
             {cell.type === "end" && (
-                <span><FontAwesomeIcon color="#1F2937" icon={faCampground} /></span>
+                <span><FontAwesomeIcon color="#374151" icon={faCampground} /></span>
             )}
             {cell.type === "wall" && (
                 <span><FontAwesomeIcon color="#374151" icon={faMountain} size="lg" /></span>
@@ -39,7 +41,7 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
             )}
         </Container>
     );
-}
+};
 
 export default DisplayCell;
 

@@ -1,6 +1,6 @@
 import React from "react";
 import AceEditor from "react-ace";
-import "ace-builds/src-noconflict/theme-xcode";
+import "ace-builds/src-noconflict/theme-tomorrow";
 import "ace-builds/src-noconflict/mode-javascript";
 import styled from "styled-components";
 
@@ -17,7 +17,7 @@ const Editor : React.FC<EditorProps> = ({code, onCodeChange}) => {
             
             <AceEditor 
                 mode="javascript"
-                theme="xcode"
+                theme="tomorrow"
                 onChange={onCodeChange}
                 name="code-editor"
                 value={code}
