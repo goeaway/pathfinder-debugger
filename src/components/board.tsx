@@ -1,4 +1,8 @@
+import { faMapMarkerAlt, faRoute, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { BoardState, Cell, Cells, CellType, Pos } from "@src/types";
+import getTypeDescription from "@src/utils/get-type-description";
+import getTypeIcon from "@src/utils/get-type-icon";
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
@@ -21,15 +25,28 @@ const createCell = (row: number, column: number, boardState: BoardState) : Cell 
               weights.some(w => w.x === column && w.y === row) ? "weight" :
               null,
         checkCount: checked.find(c => c.pos.x === column && c.pos.y === row)?.count,
-        shortestPath: shortestPath.some(sp => sp.x === column && sp.y === row)
+        shortestPath: shortestPath.some(sp => sp.x === column && sp.y === row),
+        pos: { y: row, x: column }
     }
 }
 
 const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, onCellClickType }) => { 
-    const [selectedPos, setSelectedPos] = useState<Pos>(null);
+    const [cells, setCells] = useState<Cell[][]>([]);
+    const [selectedCell, setSelectedCell] = useState<Cell>(null);
     const [cellSize, setCellSize] = useState(0);
-    const [showTooltip, setShowTooltip] = useState(false);
     const outerContainerRef = useRef<HTMLDivElement>();
+
+    useEffect(() => {
+        const newCells = [];
+        for(let row = 0; row < boardState.rows; row++) {
+            const cellRow = [];
+            for(let col = 0; col < boardState.columns; col++) {
+                cellRow.push(createCell(row, col, boardState));
+            }
+            newCells.push(cellRow);
+        }
+        setCells(newCells);
+    }, [boardState]);
 
     const actionHandler = (type: CellType, actionPos: Pos, actionState: BoardState, actionStateChange: (newState: BoardState) => void) => {
         switch(type) {
@@ -78,15 +95,15 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             const watchedKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
 
             // don't continue if the key press isn't for one of the above
-            if(!watchedKeys.includes(key)) {
+            if(!watchedKeys.includes(key) || !canEdit) {
                 return;
             }
 
             let xChange = 0;
             let yChange = 0;
 
-            if(!selectedPos) {
-                setSelectedPos({x: 0, y: 0});
+            if(!selectedCell) {
+                setSelectedCell(cells[0][0]);
             }
 
             // figure out how much to change the index pos of the current selectedCell
@@ -107,8 +124,8 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             }
 
             // get raw change, we handle array under/overflow below
-            const rawX = selectedPos.x + xChange;
-            const rawY = selectedPos.y + yChange;
+            const rawX = selectedCell.pos.x + xChange;
+            const rawY = selectedCell.pos.y + yChange;
 
             const fixedX = rawX < 0 
                 ? boardState.columns - 1
@@ -119,14 +136,14 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
                 : rawY > boardState.rows - 1
                     ? 0 : rawY;
 
-            setSelectedPos({x: fixedX, y: fixedY});
+            setSelectedCell(cells[fixedY][fixedX]);
         };
 
         // handle key presses for certain keys to peform actions
         const actionPressHandler = ({key}: KeyboardEvent) => {
             const handledKeys = ["s", "w", "e", "q"];
             // only do things if there is a selected cell or the key is in the above
-            if(!selectedPos || !handledKeys.includes(key) || !canEdit) {
+            if(!selectedCell || !handledKeys.includes(key) || !canEdit) {
                 return;
             }
 
@@ -147,7 +164,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             }
 
             const copy = Object.assign({}, boardState);
-            actionHandler(type, selectedPos, copy, onBoardStateChange);
+            actionHandler(type, selectedCell.pos, copy, onBoardStateChange);
         };
 
         window.addEventListener("keydown", arrowPressHandler);
@@ -157,7 +174,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             window.removeEventListener("keydown", arrowPressHandler);
             window.removeEventListener("keydown", actionPressHandler);
         }
-    }, [selectedPos, boardState, canEdit]);
+    }, [selectedCell, boardState, canEdit]);
 
     useLayoutEffect(() => {
         const cellSizeHandler = () => {
@@ -188,12 +205,14 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
         }
     }, []);
 
-    const onCellEnter = (pos: Pos) => {
-        setSelectedPos(pos);
+    const onCellEnter = (cell: Cell) => {
+        if(canEdit) {
+            setSelectedCell(cell);
+        }
     }
 
     const onCellLeave = () => {
-        setSelectedPos(null);
+        setSelectedCell(null);
     }
 
     const onCellClick = (pos: Pos) => {
@@ -206,21 +225,40 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
     return (
         <OuterContainer ref={outerContainerRef}>
             <Tooltip 
-                show={!!selectedPos}
+                show={!!selectedCell}
             >
-                {selectedPos?.x}
+                <TooltipContent>
+                    <div>
+                        <FontAwesomeIcon icon={faMapMarkerAlt} /> {selectedCell?.pos.x}, {selectedCell?.pos.y}
+                    </div>
+                    {selectedCell?.type && (
+                        <div>
+                            <FontAwesomeIcon icon={getTypeIcon(selectedCell.type)} /> {getTypeDescription(selectedCell.type)}
+                        </div>
+                    )}
+                    {selectedCell?.checkCount && (
+                        <div>
+                            <FontAwesomeIcon icon={faSearch} /> Cell was checked {selectedCell?.checkCount} time{selectedCell.checkCount !== 1 ? "s" : ""}
+                        </div>
+                    )}
+                    {selectedCell?.shortestPath && ["start", "end"].indexOf(selectedCell?.type) === -1 && selectedCell?.type !== "end" && (
+                        <div>
+                            <FontAwesomeIcon icon={faRoute} /> Cell is part of the shortest path
+                        </div>
+                    )}
+                </TooltipContent>
             </Tooltip>
             <BoardContainer role="board">
-                {boardState.rows.enumerate(row => (
+                {cells.length && boardState.rows.enumerate(row => (
                     <CellRow>
                         {boardState.columns.enumerate(col => (
                             <DisplayCell 
                                 size={cellSize}
-                                cell={createCell(row, col, boardState)}
-                                onMouseEnter={() => onCellEnter({x: col, y: row})}
+                                cell={cells[row][col]}
+                                onMouseEnter={() => onCellEnter(cells[row][col])}
                                 onMouseLeave={onCellLeave}
                                 onClick={() => onCellClick({x: col, y: row})}
-                                selected={selectedPos && col === selectedPos.x && row === selectedPos.y} 
+                                selected={selectedCell === cells[row][col]} 
                                 key={`${col},${row}`} 
                             />
                         ))}
@@ -285,4 +323,13 @@ const CellRow = styled.div`
     & > *:last-child {
         border-right: 2px solid #1F2937;
     }
+`
+
+const TooltipContent = styled.div`
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    gap: 5px;
+    max-width: 200px;
+    color: #374151;
 `

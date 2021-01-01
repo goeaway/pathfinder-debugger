@@ -67,7 +67,7 @@ const Container = styled.span`
     ${(p: ContainerProps) => p.checkCount > 0 && !p.shortestPath && css`
         &:after {
             position: absolute;
-            
+            z-index: 10;
             content: "";
             background: #2563EB;
             border-radius: 50%;

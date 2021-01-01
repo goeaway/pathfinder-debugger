@@ -6,6 +6,7 @@ export interface Cell {
     type?: CellType;
     checkCount?: number;
     shortestPath?: boolean;
+    pos?: Pos;
 }
 
 export interface BoardState {

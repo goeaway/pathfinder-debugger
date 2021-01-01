@@ -28,13 +28,27 @@ const Tooltip : FC<TooltipProps> = ({show, children}) => {
                 const { width, height } = containerRef.current.getBoundingClientRect();
                 const { x, y } = event;
 
-                const xOffset = 20;
-                const yOffset = 20;
+                const xOffset = 10;
+                const yOffset = 10;
 
-                // if right side of container is off viewport
-                // just minus xOffset?
+                let finalLeft = x + xOffset;
+                let finalTop = y + yOffset;
 
-                setOffset({left: x + xOffset, top: y + yOffset});
+                const isOffX = finalLeft + width >= (window.innerWidth || document.documentElement.clientWidth);
+                const isOffY = finalTop + height >= (window.innerHeight || document.documentElement.clientHeight);
+
+                // put the tooltip to the left of the mouse instead of right
+                if(isOffX) {
+                    // final left is right - width - xOffset
+                    finalLeft = x - width - xOffset;
+                }
+
+                // put the tooltip above the mouse instead of below
+                if(isOffY) {
+                    finalTop = y - height - yOffset;
+                }
+
+                setOffset({left: finalLeft, top: finalTop});
             }
         }
         // find current mouse pos

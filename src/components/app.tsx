@@ -8,12 +8,14 @@ import Dark from "@src/themes/dark";
 import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCampground, faChessBoard, faCode, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faStar, faStop, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faChessBoard, faCode, faDiceSix, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faStar, faStop, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
 import toast, { Toaster } from "react-hot-toast";
 import IconButton from "./icon-button";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { HiddenXs } from "@src/utility-components";
 import Popover from "./popover";
+import getTypeIcon from "@src/utils/get-type-icon";
+import getTypeDescription from "@src/utils/get-type-description";
 
 const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     return {
@@ -238,6 +240,13 @@ const App = () => {
         });
     }
 
+    const onRandomiseBoardHandler = () => {
+        toast("Board Randomised", {
+            duration: 2000,
+            icon: <FontAwesomeIcon icon={faDiceSix} />
+        });
+    }
+
     const onTypeChangeClick = () => {
         let toastMessage = "";
         let toastIcon: IconProp = null;
@@ -275,21 +284,8 @@ const App = () => {
         setShowHelp(false);
     }
 
-    const getSettingIcon = () => {
-        switch(onClickSetType) {
-            case "start":
-                return faHiking;
-            case "end":
-                return faCampground;
-            case "wall": 
-                return faMountain;
-            case "weight": 
-                return faTree;
-        }
-    }
-
     const getSettingTitle = () => {
-        const base = "Click here to cycle tile types."
+        const base = "Click here to cycle cell types."
         switch(onClickSetType) {
             case "start":
                 return "Click a cell to set the start. " + base;
@@ -319,25 +315,25 @@ const App = () => {
                                 Start&nbsp;<FontAwesomeIcon icon={faHiking} />
                             </HelpText>
                             <HelpTextSmall>
-                                This is where the algorithm should start from. Press S while selecting a cell to add.    
+                                {getTypeDescription("start")}. Press <b>S</b> while selecting a cell to add.    
                             </HelpTextSmall>
                             <HelpText>
                                 End&nbsp;<FontAwesomeIcon icon={faCampground} />
                             </HelpText>
                             <HelpTextSmall>
-                                This is where the algorithm should end at. Press E while selecting a cell to add.
+                                {getTypeDescription("end")}. Press <b>E</b> while selecting a cell to add.
                             </HelpTextSmall>
                             <HelpText>
                                 Wall&nbsp;<FontAwesomeIcon icon={faMountain} />
                             </HelpText>
                             <HelpTextSmall>
-                                These are cells the algorithm is not allowed to pass through. Press W while selecting a cell to add.
+                                {getTypeDescription("wall")}. Press <b>W</b> while selecting a cell to add.
                             </HelpTextSmall>
                             <HelpText>
                                 Weight&nbsp;<FontAwesomeIcon icon={faTree} />
                             </HelpText>
                             <HelpTextSmall>
-                                These are cells the algorithm can pass through but are more costly. Press Q while selecting a cell to add.
+                                {getTypeDescription("weight")}. Press <b>Q</b> while selecting a cell to add.
                             </HelpTextSmall>
                         </PopoverContent>
                     </Popover>
@@ -349,7 +345,8 @@ const App = () => {
                         <IconButton icon={faQuestion} onClick={onHelpClickHandler} title="Help" ref={helpButtonRef} />
                         <IconButton icon={faCode} secondaryIcon={faUndoAlt} onClick={onCodeResetHandler} title="Reset your code" />
                         <IconButton icon={faChessBoard} secondaryIcon={faUndoAlt} onClick={onBoardResetHandler} title="Reset the board" />
-                        <IconButton icon={getSettingIcon()} secondaryIcon={faPlusCircle} onClick={onTypeChangeClick} title={getSettingTitle()} />
+                        <IconButton icon={faDiceSix} onClick={onRandomiseBoardHandler} title="Randomise the board. Possible routes are not guaranteed" />
+                        <IconButton icon={getTypeIcon(onClickSetType)} secondaryIcon={faPlusCircle} onClick={onTypeChangeClick} title={getSettingTitle()} />
                         <RunButton 
                             title={running ? "Stop the run" : "Run the code to test the algorithm"}
                             onClick={onRunHandler} 
