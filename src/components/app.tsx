@@ -8,7 +8,7 @@ import Dark from "@src/themes/dark";
 import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCampground, faChessBoard, faCode, faDiceSix, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faStar, faStop, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faChessBoard, faCode, faCog, faDiceSix, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faStar, faStop, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
 import toast, { Toaster } from "react-hot-toast";
 import IconButton from "./icon-button";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
@@ -42,7 +42,9 @@ const App = () => {
     const [runningCancelled, setRunningCancelled] = useState(false);
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
     const [showHelp, setShowHelp] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const helpButtonRef = useRef<HTMLButtonElement>(null);
+    const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         const getSettingsForRun = () : RunSettings => {
@@ -176,7 +178,6 @@ const App = () => {
                 return;
             }
             
-            // eval the editor code
             try {
                 // add cancellable promise calling code here in string form and then ${algo.code} within
                 // the canceller should listen to setRunningCancelled and 
@@ -284,6 +285,14 @@ const App = () => {
         setShowHelp(false);
     }
 
+    const onSettingsClickHandler = () => {
+        setShowSettings(s => !s);
+    }
+
+    const onSettingsDismissHandler = () => {
+        setShowSettings(false);
+    }
+
     const getSettingTitle = () => {
         const base = "Click here to cycle cell types."
         switch(onClickSetType) {
@@ -337,6 +346,9 @@ const App = () => {
                             </HelpTextSmall>
                         </PopoverContent>
                     </Popover>
+                    <Popover show={showSettings} onDismissed={onSettingsDismissHandler} handle={settingsButtonRef} position="bottomleft">
+
+                    </Popover>
                     <TitleSection>
                         <Title>Pathfinder Debugger</Title>
                         <Description>Test pre made or custom pathdfinding algorithms with this online tool.</Description>
@@ -346,6 +358,7 @@ const App = () => {
                         <IconButton icon={faCode} secondaryIcon={faUndoAlt} onClick={onCodeResetHandler} title="Reset your code" />
                         <IconButton icon={faChessBoard} secondaryIcon={faUndoAlt} onClick={onBoardResetHandler} title="Reset the board" />
                         <IconButton icon={faDiceSix} onClick={onRandomiseBoardHandler} title="Randomise the board. Possible routes are not guaranteed" />
+                        <IconButton icon={faCog} onClick={onSettingsClickHandler} ref={settingsButtonRef} title="Settings" />
                         <IconButton icon={getTypeIcon(onClickSetType)} secondaryIcon={faPlusCircle} onClick={onTypeChangeClick} title={getSettingTitle()} />
                         <RunButton 
                             title={running ? "Stop the run" : "Run the code to test the algorithm"}

@@ -44,10 +44,14 @@ const Popover : FC<PopoverProps> = ({show, onDismissed, handle, children, positi
 
     const variants = {
         initial: {
-            opacity: 0
+            opacity: 0,
+            rotateX: -10,
+            transformPerspective: "1000px"
         },
         animate: {
-            opacity: 1
+            opacity: 1,
+            rotateX: 0,
+            transformPerspective: "1000px"
         }
     }
 
@@ -62,6 +66,7 @@ const Popover : FC<PopoverProps> = ({show, onDismissed, handle, children, positi
                     animate="animate"
                     exit="initial"
                     variants={variants}
+                    style={{originY: 0}}
                 >
                     {children}
                 </Container>
@@ -92,7 +97,6 @@ const Container = styled(motion.div)`
   0 19.6px 33.4px rgba(0, 0, 0, 0.05),
   0 47px 80px rgba(0, 0, 0, 0.07)
 ;
-    
     top: ${(p: ContainerProps) => p.top}px;
     left: ${(p: ContainerProps) => p.left}px;
 `
