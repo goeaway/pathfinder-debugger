@@ -77,3 +77,16 @@ export interface CodeStorageService {
 }
 
 export type PopoverPosition = "bottom" | "bottomright" | "bottomleft";
+
+export interface AppSettings {
+    boardColumns: number;
+    boardRows: number;
+    updateSpeed: number;
+    percentWalls: number;
+    percentWeights: number;
+}
+
+export interface AppSettingsService {
+    getAppSettings: () => AppSettings;
+    saveAppSettings: (settings: AppSettings) => void;
+}

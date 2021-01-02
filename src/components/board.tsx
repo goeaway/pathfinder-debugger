@@ -54,11 +54,11 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
 
     const actionHandler = (type: CellType, actionPos: Pos, actionState: BoardState, actionStateChange: (newState: BoardState) => void) => {
         // remove pos from any existing board state to avoid the same position having multiple different types
-        if(actionState.start.x === actionPos.x && actionState.start.y === actionPos.y) {
+        if(actionState.start && actionState.start.x === actionPos.x && actionState.start.y === actionPos.y) {
             actionState.start = null;
         }
 
-        if(actionState.end.x === actionPos.x && actionState.end.y === actionPos.y) {
+        if(actionState.end && actionState.end.x === actionPos.x && actionState.end.y === actionPos.y) {
             actionState.end = null;
         }
 
@@ -156,6 +156,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
         const actionPressHandler = ({key}: KeyboardEvent) => {
             const handledKeys = ["s", "w", "e", "q"];
             // only do things if there is a selected cell or the key is in the above
+            
             if(!selectedCell || !handledKeys.includes(key) || !canEdit) {
                 return;
             }

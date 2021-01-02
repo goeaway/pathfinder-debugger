@@ -17,6 +17,7 @@ import Popover from "./popover";
 import getTypeIcon from "@src/utils/get-type-icon";
 import getTypeDescription from "@src/utils/get-type-description";
 import { randomInRange } from "@src/utils/random-in-range";
+import useAppSettings from "@src/hooks/use-app-settings";
 
 const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     return {
@@ -31,15 +32,13 @@ const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     }
 }
 
-const RENDER_WAIT_DEFAULT = 25;
-const COLUMNS = 20;
-const ROWS = 20;
-
 const App = () => {
+    const { getAppSettings, saveAppSettings } = useAppSettings();
+    const appSettings = getAppSettings();
     const { getCode, saveCode, getBoardState, saveBoardState } = useCodeStorage();
     const [running, setRunning] = useState(false);
     const [algo, setAlgo] = useState<EditableAlgo>(getCode() || {...algorithms[0], code: ""});
-    const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(ROWS, COLUMNS));
+    const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(appSettings.boardRows, appSettings.boardColumns));
     const [runningCancelled, setRunningCancelled] = useState(false);
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
     const [showHelp, setShowHelp] = useState(false);
@@ -79,7 +78,7 @@ const App = () => {
                     });
 
                     setBoardState(newState);
-                    setTimeout(res, RENDER_WAIT_DEFAULT);
+                    setTimeout(res, appSettings.updateSpeed);
                 } else {
                     res();
                 }
@@ -118,7 +117,7 @@ const App = () => {
                                 await new Promise(res => setTimeout(() => {
                                     setBoardState(newState);
                                     res(null);
-                                }, RENDER_WAIT_DEFAULT));
+                                }, appSettings.updateSpeed));
                             }
 
                             toast(`${path.length -1} step path found`, 
@@ -270,11 +269,11 @@ const App = () => {
         changes.push(newState.end);
 
         // set a percentage of the cells to be walls
-        newState.walls = Math.floor(columns * rows * .3).enumerate(i => getRandomUniquePosition(columns, rows, changes));
+        newState.walls = Math.floor(columns * rows * (appSettings.percentWalls/100)).enumerate(i => getRandomUniquePosition(columns, rows, changes));
         changes = changes.concat(newState.walls);
 
         // set a percentage of the cells to be weights
-        newState.weights = Math.floor(columns * rows * .2).enumerate(i => getRandomUniquePosition(columns, rows, changes));
+        newState.weights = Math.floor(columns * rows * (appSettings.percentWeights/100)).enumerate(i => getRandomUniquePosition(columns, rows, changes));
 
         newState.checked = [];
         newState.shortestPath = [];
@@ -386,7 +385,15 @@ const App = () => {
                         </PopoverContent>
                     </Popover>
                     <Popover show={showSettings} onDismissed={onSettingsDismissHandler} handle={settingsButtonRef} position="bottomleft">
+                        board size
 
+                        update speed
+
+                        randomise walls percentage
+
+                        randomise weights percentage
+
+                        reset to defaults button
                     </Popover>
                     <TitleSection>
                         <Title>Pathfinder Debugger</Title>
@@ -438,6 +445,18 @@ const AppContainer = styled.div`
 
     .notifications {
         opacity: 1 !important;
+    }
+    
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(0,255,0, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 30px rgba(0,255,0, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(0,255,0, 0);
+        }
     }
 `
 

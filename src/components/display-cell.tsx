@@ -25,6 +25,7 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
             onMouseEnter={onMouseEnter} 
             onMouseLeave={onMouseLeave}
             onClick={onClick} 
+            pulse={["start", "end"].indexOf(cell.type) > -1}
         >
             {/* Display Icon based on start/end/wall/weight */}
             {cell.type === "start" && (
@@ -49,6 +50,7 @@ interface ContainerProps {
     selected?: boolean;
     checkCount?: number;
     shortestPath?: boolean;
+    pulse?: boolean;
     size: number;
 }
 
@@ -73,6 +75,18 @@ const Container = styled.span`
             border-radius: 50%;
             width: ${(p: ContainerProps) => p.checkCount * 10}px;
             height: ${(p: ContainerProps) => p.checkCount * 10}px;
+        }
+    `}
+
+    ${(p: ContainerProps) => p.pulse && css`
+        &:before {
+            position: absolute;
+            content: "";
+            border-radius: 50%;
+            width: 1px;
+            height: 1px;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 rgba(0,255,0, 0.7);
         }
     `}
 

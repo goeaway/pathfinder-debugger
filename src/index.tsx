@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./components/app";
+import AppSettingsContext, { defaultAppSettingsContext } from "./context/app-settings-context";
 import CodeStorageContext, { defaultCodeStorageContext } from "./context/code-storage-context";
 import { Theme } from "./types";
 
@@ -40,6 +41,8 @@ document.body.appendChild(root);
 
 ReactDOM.render(
     <CodeStorageContext.Provider value={defaultCodeStorageContext}>
-        <App />
+        <AppSettingsContext.Provider value={defaultAppSettingsContext}>
+            <App />
+        </AppSettingsContext.Provider>
     </CodeStorageContext.Provider>
     , root);
