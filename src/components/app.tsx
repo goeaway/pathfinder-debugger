@@ -16,6 +16,7 @@ import { HiddenSm } from "@src/utility-components";
 import Popover from "./popover";
 import getTypeIcon from "@src/utils/get-type-icon";
 import getTypeDescription from "@src/utils/get-type-description";
+import { randomInRange } from "@src/utils/random-in-range";
 
 const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     return {
@@ -246,6 +247,40 @@ const App = () => {
     }
 
     const onRandomiseBoardHandler = () => {
+        const { columns, rows } = boardState;
+        const newState = Object.assign({}, boardState);
+
+        const getRandomUniquePosition = (cols: number, rows: number, existing: Pos[]) => {
+            let newRandom = null;
+            do 
+            {
+                newRandom = { x: randomInRange(0, cols), y: randomInRange(0, rows)};
+            } while(existing.some(e => e.x === newRandom.x && e.y === newRandom.y));
+
+            return newRandom;
+        }
+
+        // store positions that are set to avoid setting the same positions with different types
+        let changes = [];
+
+        newState.start = getRandomUniquePosition(columns, rows, changes);
+        changes.push(newState.start);
+
+        newState.end = getRandomUniquePosition(columns, rows, changes);
+        changes.push(newState.end);
+
+        // set a percentage of the cells to be walls
+        newState.walls = Math.floor(columns * rows * .3).enumerate(i => getRandomUniquePosition(columns, rows, changes));
+        changes = changes.concat(newState.walls);
+
+        // set a percentage of the cells to be weights
+        newState.weights = Math.floor(columns * rows * .2).enumerate(i => getRandomUniquePosition(columns, rows, changes));
+
+        newState.checked = [];
+        newState.shortestPath = [];
+
+        setBoardState(newState);
+
         toast("Board Randomised", {
             duration: 2000,
             icon: <FontAwesomeIcon icon={faDiceSix} />
