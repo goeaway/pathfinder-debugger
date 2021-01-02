@@ -41,6 +41,10 @@ export interface Algo {
     type: AlgoType;
 }
 
+export interface EditableAlgo extends Algo {
+    code: string;
+}
+
 export interface Theme {
     background: Range;
     fontLight: Range;
@@ -66,8 +70,8 @@ export interface Breakpoints {
 }
 
 export interface CodeStorageService {
-    getCode: () => { algo: Algo, code: string };
-    saveCode: (code: {algo: Algo, code: string}) => void;
+    getCode: () => EditableAlgo;
+    saveCode: (code: EditableAlgo) => void;
     getBoardState: () => BoardState;
     saveBoardState: (boardState: BoardState) => void;
 }

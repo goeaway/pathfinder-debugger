@@ -1,13 +1,13 @@
-import { Algo, BoardState, Cells, CodeStorageService } from "@src/types";
+import { Algo, BoardState, Cells, CodeStorageService, EditableAlgo } from "@src/types";
 import { createContext } from "react";
 
 export const defaultCodeStorageContext : CodeStorageService = {
     getCode: () => {
         const raw = window.localStorage.getItem("code");
-        return JSON.parse(raw) as { code: string, algo: Algo };
+        return JSON.parse(raw) as EditableAlgo;
     },
-    saveCode: (code: { code: string, algo: Algo }) => {
-        window.localStorage.setItem("code", JSON.stringify(code));
+    saveCode: (algo: EditableAlgo) => {
+        window.localStorage.setItem("code", JSON.stringify(algo));
     },
     getBoardState: () => {
         const raw = window.localStorage.getItem("boardState");

@@ -1,4 +1,4 @@
-import { Algo, BoardState, Cell, Cells, CellType, CellUpdate, Pos, RunSettings } from "@src/types";
+import { Algo, BoardState, Cell, Cells, CellType, CellUpdate, EditableAlgo, Pos, RunSettings } from "@src/types";
 import React, { useEffect, useRef, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
@@ -12,7 +12,7 @@ import { faCampground, faChessBoard, faCode, faCog, faDiceSix, faExclamationTria
 import toast, { Toaster } from "react-hot-toast";
 import IconButton from "./icon-button";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
-import { HiddenXs } from "@src/utility-components";
+import { HiddenSm } from "@src/utility-components";
 import Popover from "./popover";
 import getTypeIcon from "@src/utils/get-type-icon";
 import getTypeDescription from "@src/utils/get-type-description";
@@ -37,7 +37,7 @@ const ROWS = 20;
 const App = () => {
     const { getCode, saveCode, getBoardState, saveBoardState } = useCodeStorage();
     const [running, setRunning] = useState(false);
-    const [algo, setAlgo] = useState<{algo: Algo, code: string}>(getCode() || { algo: algorithms[0], code: ""});
+    const [algo, setAlgo] = useState<EditableAlgo>(getCode() || {...algorithms[0], code: ""});
     const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(ROWS, COLUMNS));
     const [runningCancelled, setRunningCancelled] = useState(false);
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
@@ -127,6 +127,10 @@ const App = () => {
                                 }
                             );
                         } else {
+                            // unset any shortest path or check count cells
+                            const newState = Object.assign({}, boardState);
+                            newState.shortestPath = [];
+                            setBoardState(newState);
                             toast.error("No path could be found", { duration: 5000 });
                         }
 
@@ -211,12 +215,12 @@ const App = () => {
     }
 
     const onAlgorithmChangeHandler = (algo: Algo) => {
-        setAlgo({ algo, code: algo.source});
+        setAlgo({...algo, code: algo.source});
     }
 
     const onCodeResetHandler = () => {
         const newAlgo = Object.assign({}, algo);
-        newAlgo.code = algo.algo.source;
+        newAlgo.code = algo.source;
         setAlgo(newAlgo);
 
         toast("Code Reset", {
@@ -364,13 +368,12 @@ const App = () => {
                             title={running ? "Stop the run" : "Run the code to test the algorithm"}
                             onClick={onRunHandler} 
                             running={running}>
-                                {(running ? <><FontAwesomeIcon icon={faStop}/><HiddenXs>&nbsp;&nbsp;Stop</HiddenXs></> : <><FontAwesomeIcon icon={faPlay}/><HiddenXs>&nbsp;&nbsp;Run</HiddenXs></>)}
+                                {(running ? <><FontAwesomeIcon icon={faStop}/><HiddenSm>&nbsp;&nbsp;Stop</HiddenSm></> : <><FontAwesomeIcon icon={faPlay}/><HiddenSm>&nbsp;&nbsp;Run</HiddenSm></>)}
                         </RunButton>
                     </Controls>
                 </TopBar>
-                <Menu onAlgorithmChange={onAlgorithmChangeHandler} />
                 <ContentContainer>
-                    <Editor code={algo.code} onCodeChange={onCodeChangeHandler} />
+                    <Editor algo={algo} onCodeChange={onCodeChangeHandler} onAlgorithmChange={onAlgorithmChangeHandler} />
                     <Board canEdit={!running} boardState={boardState} onBoardStateChange={setBoardState} onCellClickType={onClickSetType} />
                 </ContentContainer>
             </AppContainer>
@@ -387,7 +390,7 @@ const AppContainer = styled.div`
     flex-direction: column;
     align-items: center;
     height: 100%;
-    padding: .5rem;
+    padding: .5rem 1rem;
     background: #F3F4F6;
 
     > * {
@@ -398,12 +401,6 @@ const AppContainer = styled.div`
         font-family: 'Roboto', sans-serif;
     }
 
-    @media(min-width:${p => p.theme.breakpoints.sm}px) {
-        display: grid;
-        grid-template-rows: min-content auto;
-        grid-template-columns: 120px auto;
-    }
-
     .notifications {
         opacity: 1 !important;
     }
@@ -411,11 +408,17 @@ const AppContainer = styled.div`
 
 const TopBar = styled.div`
     display: flex;
+    flex-direction: column;
+    gap: .5rem;
     align-items: center;
     justify-content: space-between;
     grid-column-start: 1;
     grid-column-end: 3;
     margin-bottom: .5rem;
+
+    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+        flex-direction: row;
+    }
 `
 
 const Controls = styled.div`
@@ -454,7 +457,7 @@ const ContentContainer = styled.div`
     display: flex;
     flex-direction: column;
 
-    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+    @media(min-width:${p => p.theme.breakpoints.md}px) {
         display: grid;
         grid-template-columns: 50% 50%;
     }
@@ -464,6 +467,11 @@ const TitleSection = styled.div`
     display: flex;
     flex-direction: column;
     padding-right: 1rem;
+    text-align: center;
+
+    @media(min-width: ${p => p.theme.breakpoints.sm}px) {
+        text-align: left;
+    }
 `
     
 const Description = styled.div`
@@ -472,7 +480,6 @@ const Description = styled.div`
 `
     
 const Title = styled.h1`
-    
     font-size: 30px;
     line-height: 40px;
     padding: 0;

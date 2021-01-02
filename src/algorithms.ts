@@ -123,6 +123,19 @@ function getSmallest(nodes) {
         `
     },
     {
+        id: "dijkstra",
+        name: "Dijkstra's",
+        type: "weighted",
+        source: `board.run(algorithm);
+        
+async function algorithm(settings) {
+    const { columns, rows, start, end, walls, weights } = settings;
+    // add your code here   
+    // call updater within your algorithm to update the board whenever you want
+    // await board.updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+}`
+    },
+    {
         id: "custom",
         name: "Custom",
         type: "custom",

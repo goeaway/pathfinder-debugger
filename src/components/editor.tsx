@@ -2,27 +2,56 @@ import React from "react";
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/theme-tomorrow";
 import "ace-builds/src-noconflict/mode-javascript";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
+import algorithms from "@src/algorithms";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFeatherAlt, faPen, faWeightHanging } from "@fortawesome/free-solid-svg-icons";
+import { Algo, AlgoType, EditableAlgo } from "@src/types";
 
 
 
 export interface EditorProps {
-    code: string;
+    algo: EditableAlgo;
     onCodeChange: (value: string) => void;
+    onAlgorithmChange: (algo: Algo) => void;
 }
 
-const Editor : React.FC<EditorProps> = ({code, onCodeChange}) => {
+const Editor : React.FC<EditorProps> = ({algo, onCodeChange, onAlgorithmChange}) => {
+    const onAlgorithmTabClickHandler = (id: string) => {
+        onAlgorithmChange(algorithms.find(a => a.id === id));
+    }
+
+    const getIconForType = (type: AlgoType) => {
+        switch (type) {
+            case "custom":
+                return faPen;
+            case "weighted":
+                return faWeightHanging;
+            case "unweighted":
+                return faFeatherAlt;
+        }
+    }
+
     return (
         <Container>
-            
+            <TabContainer>
+                {algorithms.map(a => (
+                    <Button 
+                        key={a.id}
+                        active={algo.id === a.id}
+                        onClick={() => onAlgorithmTabClickHandler(a.id)}>
+                        <FontAwesomeIcon icon={getIconForType(a.type)} />&nbsp;
+                        {a.name}
+                    </Button>
+                ))}
+            </TabContainer>
             <AceEditor 
                 mode="javascript"
                 theme="tomorrow"
                 onChange={onCodeChange}
                 name="code-editor"
-                value={code}
-                fontSize="12px"
-                
+                value={algo.code}
+                fontSize="14px"
                 width="100%"
                 height="100%"
                 editorProps={{
@@ -41,9 +70,36 @@ const Container = styled.div`
     flex-direction: column;
     min-height: 300px;
     min-width: 300px;
+    border-radius: 6px;
+    border: 2px solid #4B5563;
+    background: white;
+    overflow: hidden;
+`
 
-    #code-editor {
-        border-radius: 6px;
-        border: 1px solid #D1D5DB;
-    }
+const TabContainer = styled.div`
+    display: flex;
+    background: #F6F6F6;
+`
+
+interface ButtonProps {
+    active: boolean;
+}
+
+const Button = styled.button`
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    padding: .5rem;
+    cursor: pointer;
+    transition: background 300ms ease;
+
+    ${(p: ButtonProps) => p.active && css`
+        border-bottom: 2px solid #9CA3AF;
+    `}
+
+    ${(p: ButtonProps) => !p.active && css`
+        &:hover {
+            background: #D1D5DB;
+        }
+    `}
 `

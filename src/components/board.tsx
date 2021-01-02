@@ -41,7 +41,11 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
         for(let row = 0; row < boardState.rows; row++) {
             const cellRow = [];
             for(let col = 0; col < boardState.columns; col++) {
-                cellRow.push(createCell(row, col, boardState));
+                const cell = createCell(row, col, boardState);
+                cellRow.push(cell);
+                if(selectedCell && row === selectedCell.pos.y && col === selectedCell.pos.x) {
+                    setSelectedCell(cell);
+                }
             }
             newCells.push(cellRow);
         }
@@ -49,6 +53,25 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
     }, [boardState]);
 
     const actionHandler = (type: CellType, actionPos: Pos, actionState: BoardState, actionStateChange: (newState: BoardState) => void) => {
+        // remove pos from any existing board state to avoid the same position having multiple different types
+        if(actionState.start.x === actionPos.x && actionState.start.y === actionPos.y) {
+            actionState.start = null;
+        }
+
+        if(actionState.end.x === actionPos.x && actionState.end.y === actionPos.y) {
+            actionState.end = null;
+        }
+
+        const existingWallIndex = actionState.walls.findIndex(w => w.x === actionPos.x && w.y === actionPos.y);
+        if(existingWallIndex > -1) {
+            actionState.walls.splice(existingWallIndex, 1);
+        }
+
+        const existingWeightIndex = actionState.weights.findIndex(w => w.x == actionPos.x && w.y == actionPos.y);
+        if(existingWeightIndex > -1) {
+            actionState.weights.splice(existingWeightIndex, 1);
+        }
+
         switch(type) {
             case "start": {
                 actionState.start = actionPos;
@@ -56,13 +79,8 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
                 break;
             }
             case "wall": {
-                // find pos in state.walls
-                const existingWallIndex = actionState.walls.findIndex(w => w.x == actionPos.x && w.y == actionPos.y);
-                
-                // if it's there remove it, if not add it
-                if(existingWallIndex > -1) {
-                    actionState.walls.splice(existingWallIndex, 1);
-                } else {
+                // don't push if there was already a wall here
+                if(existingWallIndex === -1) {
                     actionState.walls.push(actionPos);
                 }
                 actionStateChange(actionState);
@@ -74,13 +92,8 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
                 break;
             }
             case "weight": {
-                // find pos in state.weights
-                const existingWeightIndex = actionState.weights.findIndex(w => w.x == actionPos.x && w.y == actionPos.y);
-                
-                // if it's there remove it, if not add it
-                if(existingWeightIndex > -1) {
-                    actionState.weights.splice(existingWeightIndex, 1);
-                } else {
+                // don't push if there was already a weight here
+                if(existingWeightIndex === -1) {
                     actionState.weights.push(actionPos);
                 }
                 actionStateChange(actionState);
@@ -188,8 +201,8 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
                 const paddingHorizontal = parseFloat(outerContainerStyle.paddingLeft) + parseFloat(outerContainerStyle.paddingRight);
                 const paddingVertical = parseFloat(outerContainerStyle.paddingTop) + parseFloat(outerContainerStyle.paddingBottom);
 
-                const maxCellWidth = Math.floor((width - paddingHorizontal) / boardState.columns);
-                const maxCellHeight = Math.floor((height - paddingVertical) / boardState.rows);
+                const maxCellWidth = (width - paddingHorizontal) / boardState.columns;
+                const maxCellHeight = (height - paddingVertical) / boardState.rows;
 
                 const newCellSize = Math.min(maxCellHeight, maxCellWidth);
                 setCellSize(newCellSize);
@@ -278,9 +291,10 @@ const OuterContainer = styled.div`
     overflow: hidden;
     padding-top: 1rem;
     
-    @media(min-width:${p => p.theme.breakpoints.sm}px) {
+    @media(min-width:${p => p.theme.breakpoints.md}px) {
         justify-content: flex-end;
         padding-top: 0;
+        padding-left: .5rem;
     }
 `
 
