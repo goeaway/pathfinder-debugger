@@ -89,7 +89,7 @@ const Button = styled.button`
     border: none;
     border-bottom: 2px solid transparent;
     background: none;
-    padding: .5rem;
+    padding: .75rem;
     cursor: pointer;
     transition: background 300ms ease;
 
