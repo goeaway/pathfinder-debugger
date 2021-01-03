@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { MutableRefObject } from "react";
 import { FC } from "react";
 import styled from "styled-components";
 

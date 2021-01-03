@@ -7,12 +7,12 @@ const algorithms : Array<Algo> = [
         type: "unweighted",
         source: `board.run(algorithm);
 
-async function algorithm(settings) {
+async function algorithm(settings, updater, cancelled) {
     const { columns: x, rows: y, start, end, walls } = settings;
     let open = [createNode(start)];
     let closed = [];
 
-    while(open.length != 0 && !board.cancelled()) {
+    while(open.length != 0 && !cancelled()) {
         // get the current smallest length node in the open
         let current = getSmallest(open);
         
@@ -50,7 +50,7 @@ async function algorithm(settings) {
                 
             } else { // otherwise add a new open node 
                 // call updater so debugger can see what we're touching
-                await board.updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+                await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
                 open.push(createNode(
                     {x:newX,y:newY},
                     Math.abs(newX - start.x) + Math.abs(newY - start.y),
@@ -128,11 +128,15 @@ function getSmallest(nodes) {
         type: "weighted",
         source: `board.run(algorithm);
         
-async function algorithm(settings) {
+async function algorithm(settings, updater, cancelled) {
     const { columns, rows, start, end, walls, weights } = settings;
-    // add your code here   
+    
+    // add your code here  
+
     // call updater within your algorithm to update the board whenever you want
-    // await board.updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+    // await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+    // call cancelled() within your algorithm to check if the run has been cancelled,
+    // you should stop the run if it returns true
 }`
     },
     {
@@ -141,11 +145,15 @@ async function algorithm(settings) {
         type: "custom",
         source: `board.run(algorithm);
         
-async function algorithm(settings) {
+async function algorithm(settings, updater, cancelled) {
     const { columns, rows, start, end, walls, weights } = settings;
+    
     // add your code here   
+    
     // call updater within your algorithm to update the board whenever you want
-    // await board.updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+    // await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+    // call cancelled() within your algorithm to check if the run has been cancelled,
+    // you should stop the run if it returns true
 }`
     }
 ];

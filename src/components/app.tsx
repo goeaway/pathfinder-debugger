@@ -1,5 +1,5 @@
 import { Algo, BoardState, Cell, Cells, CellType, CellUpdate, EditableAlgo, Pos, RunSettings } from "@src/types";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
 import Editor from "./editor";
@@ -39,7 +39,8 @@ const App = () => {
     const [running, setRunning] = useState(false);
     const [algo, setAlgo] = useState<EditableAlgo>(getCode() || {...algorithms[0], code: ""});
     const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(appSettings.boardRows, appSettings.boardColumns));
-    const [runningCancelled, setRunningCancelled] = useState(false);
+    // use a ref instead of state because we need to keep this value up to date when passing it into board.run callback, when we store in state this value is not updated for the callback
+    const runningCancelled = useRef(false);
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
     const [showHelp, setShowHelp] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
@@ -85,11 +86,14 @@ const App = () => {
             })
         }
 
+        const cancelled = () => runningCancelled.current;
+
         // add window.board api
         window.board = {
-            cancelled: () => runningCancelled,
-            updater,
-            run: (pathfinderRunner: (settings: RunSettings) => Promise<Array<Pos>>) => {
+            run: (pathfinderRunner: (
+                settings: RunSettings,
+                updater: (cellUpdates: Array<CellUpdate>) => Promise<void>,
+                cancelled: () => boolean) => Promise<Array<Pos>>) => {
                 // reset the board state
                 setBoardState(s => {
                     s.checked = [];
@@ -100,7 +104,7 @@ const App = () => {
                 // set that we're running, then call the runner function
                 setRunning(true);
 
-                pathfinderRunner(getSettingsForRun())
+                pathfinderRunner(getSettingsForRun(), updater, cancelled)
                     .then(async path => {
                         setRunning(false);
                         
@@ -126,7 +130,7 @@ const App = () => {
                                     icon: <FontAwesomeIcon icon={faRoute} />
                                 }
                             );
-                        } else {
+                        } else if (!runningCancelled.current){
                             // unset any shortest path or check count cells
                             const newState = Object.assign({}, boardState);
                             newState.shortestPath = [];
@@ -134,11 +138,13 @@ const App = () => {
                             toast.error("No path could be found", { duration: 5000 });
                         }
 
-                        setRunningCancelled(false);
+                        runningCancelled.current = false;
                     });
             }
         }
-    }, [boardState, runningCancelled]);
+    }, [boardState]);
+
+
 
     useEffect(() => {
         saveBoardState(boardState);
@@ -151,7 +157,7 @@ const App = () => {
     const onRunHandler = () => {
         if(running) {
             // cancel running
-            setRunningCancelled(true);
+            runningCancelled.current = true;
             toast("Run Stopped", {
                 icon: <FontAwesomeIcon icon={faStop} color="#B91C1C"/>,
                 duration: 2000
