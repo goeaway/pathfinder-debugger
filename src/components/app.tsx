@@ -47,6 +47,56 @@ const App = () => {
     const helpButtonRef = useRef<HTMLButtonElement>(null);
     const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
+    const pathfinderRunnerComplete = useCallback(async (result: Pos[] | Error) => {
+        setRunning(false);
+
+        // if result is an error, toast it
+        if(result instanceof Error) {
+            toast.dismiss();
+            toast.error(
+                <div>
+                    <div>
+                        Error occurred when running algorithm
+                    </div>
+                    <pre>
+                        {result.message}
+                    </pre>
+                </div>, {
+                duration: 5000
+            });
+        } else {
+            // we have a valid path
+            if(result && result.length) {
+                for(const pos of result) {
+                    const newState = Object.assign({}, boardState);
+                    newState.shortestPath.push(pos);
+                    
+                    await new Promise(res => setTimeout(() => {
+                        setBoardState(newState);
+                        res(null);
+                    }, appSettings.updateSpeed));
+                }
+                toast.dismiss();
+                toast(`${result.length -1} step path found`, 
+                    { 
+                        duration: 5000,
+                        icon: <FontAwesomeIcon icon={faRoute} />
+                    }
+                );
+            } else { // path couldn't be made
+                // unset any shortest path or check count cells
+                const newState = Object.assign({}, boardState);
+                newState.shortestPath = [];
+                setBoardState(newState);
+                toast.dismiss();
+                toast.error("No path could be found", { duration: 5000 });
+            }
+        } 
+        
+        runningCancelled.current = false;
+            
+    }, [boardState]);
+    
     useEffect(() => {
         const getSettingsForRun = () : RunSettings => {
             // return current settings
@@ -65,6 +115,10 @@ const App = () => {
             // find the cell at the same pos
             // update its checkCount by the amount
             return new Promise((res, rej) => {
+                if(runningCancelled.current) {
+                    rej(new Error("Run was cancelled"));
+                }
+
                 if(cellUpdates) {
                     const newState = Object.assign({}, boardState);
 
@@ -86,14 +140,11 @@ const App = () => {
             })
         }
 
-        const cancelled = () => runningCancelled.current;
-
         // add window.board api
         window.board = {
             run: (pathfinderRunner: (
                 settings: RunSettings,
-                updater: (cellUpdates: Array<CellUpdate>) => Promise<void>,
-                cancelled: () => boolean) => Promise<Array<Pos>>) => {
+                updater: (cellUpdates: Array<CellUpdate>) => Promise<void>) => Promise<Array<Pos>>) => {
                 // reset the board state
                 setBoardState(s => {
                     s.checked = [];
@@ -104,42 +155,9 @@ const App = () => {
                 // set that we're running, then call the runner function
                 setRunning(true);
 
-                pathfinderRunner(getSettingsForRun(), updater, cancelled)
-                    .then(async path => {
-                        setRunning(false);
-                        
-                        // provides an array of positions in the shortest path, order is important
-                        // if path not possible, null is provided
-                        
-                        if(path) {
-                            // each time i update one of the ones on the path, 
-                            // i want to update the board
-                            for(const pos of path) {
-                                const newState = Object.assign({}, boardState);
-                                newState.shortestPath.push(pos);
-                                
-                                await new Promise(res => setTimeout(() => {
-                                    setBoardState(newState);
-                                    res(null);
-                                }, appSettings.updateSpeed));
-                            }
-
-                            toast(`${path.length -1} step path found`, 
-                                { 
-                                    duration: 5000,
-                                    icon: <FontAwesomeIcon icon={faRoute} />
-                                }
-                            );
-                        } else if (!runningCancelled.current){
-                            // unset any shortest path or check count cells
-                            const newState = Object.assign({}, boardState);
-                            newState.shortestPath = [];
-                            setBoardState(newState);
-                            toast.error("No path could be found", { duration: 5000 });
-                        }
-
-                        runningCancelled.current = false;
-                    });
+                pathfinderRunner(getSettingsForRun(), updater)
+                    .then(pathfinderRunnerComplete)
+                    .catch(pathfinderRunnerComplete);
             }
         }
     }, [boardState]);
@@ -158,10 +176,6 @@ const App = () => {
         if(running) {
             // cancel running
             runningCancelled.current = true;
-            toast("Run Stopped", {
-                icon: <FontAwesomeIcon icon={faStop} color="#B91C1C"/>,
-                duration: 2000
-            });
         } else {
             const hasStart = !!boardState.start;
             const hasEnd = !!boardState.end;
@@ -181,6 +195,7 @@ const App = () => {
                     icon = faCampground;
                 }
 
+                toast.dismiss();
                 toast(message, {
                     icon: <FontAwesomeIcon icon={icon} />,
                     duration: 5000
@@ -189,27 +204,9 @@ const App = () => {
             }
             
             try {
-                // add cancellable promise calling code here in string form and then ${algo.code} within
-                // the canceller should listen to setRunningCancelled and 
-
-                // wrap algo code in async function, 
-                // add canceller promise
-                // await algo code
-                const evaluator = new Function(algo.code);
-                evaluator();
+                eval(algo.code);
             } catch (e) {
-                const error = e as Error;
-                toast.error(
-                    <div>
-                        <div>
-                            Error occurred when running algorithm
-                        </div>
-                        <pre>
-                            {error.message}
-                        </pre>
-                    </div>, {
-                    duration: 8000
-                });
+                pathfinderRunnerComplete(e as Error);
             }
         }
     };
@@ -229,6 +226,7 @@ const App = () => {
         newAlgo.code = algo.source;
         setAlgo(newAlgo);
 
+        toast.dismiss();
         toast("Code Reset", {
             duration: 5000,
             icon: <FontAwesomeIcon icon={faUndo} />
@@ -245,6 +243,7 @@ const App = () => {
         newState.weights = [];
         setBoardState(newState);
 
+        toast.dismiss();
         toast("Board Reset", {
             duration: 5000,
             icon: <FontAwesomeIcon icon={faUndoAlt} />
@@ -286,6 +285,7 @@ const App = () => {
 
         setBoardState(newState);
 
+        toast.dismiss();
         toast("Board Randomised", {
             duration: 2000,
             icon: <FontAwesomeIcon icon={faDiceSix} />
@@ -318,6 +318,7 @@ const App = () => {
                 break;
         }
 
+        toast.dismiss();
         toast(toastMessage, { duration: 2000, icon: <FontAwesomeIcon icon={toastIcon} />})
     }
 

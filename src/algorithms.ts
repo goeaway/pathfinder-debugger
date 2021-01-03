@@ -7,12 +7,12 @@ const algorithms : Array<Algo> = [
         type: "unweighted",
         source: `board.run(algorithm);
 
-async function algorithm(settings, updater, cancelled) {
+async function algorithm(settings, updater) {
     const { columns: x, rows: y, start, end, walls } = settings;
     let open = [createNode(start)];
     let closed = [];
 
-    while(open.length != 0 && !cancelled()) {
+    while(open.length != 0) {
         // get the current smallest length node in the open
         let current = getSmallest(open);
         
@@ -128,15 +128,13 @@ function getSmallest(nodes) {
         type: "weighted",
         source: `board.run(algorithm);
         
-async function algorithm(settings, updater, cancelled) {
+async function algorithm(settings, updater) {
     const { columns, rows, start, end, walls, weights } = settings;
     
     // add your code here  
 
     // call updater within your algorithm to update the board whenever you want
     // await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
-    // call cancelled() within your algorithm to check if the run has been cancelled,
-    // you should stop the run if it returns true
 }`
     },
     {
@@ -145,15 +143,13 @@ async function algorithm(settings, updater, cancelled) {
         type: "custom",
         source: `board.run(algorithm);
         
-async function algorithm(settings, updater, cancelled) {
+async function algorithm(settings, updater) {
     const { columns, rows, start, end, walls, weights } = settings;
     
     // add your code here   
     
     // call updater within your algorithm to update the board whenever you want
     // await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
-    // call cancelled() within your algorithm to check if the run has been cancelled,
-    // you should stop the run if it returns true
 }`
     }
 ];
