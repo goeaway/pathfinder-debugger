@@ -6,7 +6,7 @@ import getTypeIcon from "@src/utils/get-type-icon";
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
-import Tooltip from "./tooltip";
+import MouseTrackingTooltip from "./mouse-tracking-tooltip";
 
 export interface BoardProps {
     onBoardStateChange: (newState: BoardState) => void;
@@ -22,7 +22,7 @@ const createCell = (row: number, column: number, boardState: BoardState) : Cell 
         type: start?.x === column && start?.y === row ? "start" :
               end?.x === column && end?.y === row ? "end" :
               walls.some(w => w.x === column && w.y === row) ? "wall" : 
-              weights.some(w => w.x === column && w.y === row) ? "weight" :
+              weights.some(w => w.pos.x === column && w.pos.y === row) ? "weight" :
               null,
         checkCount: checked.find(c => c.pos.x === column && c.pos.y === row)?.count,
         shortestPath: shortestPath.some(sp => sp.x === column && sp.y === row),
@@ -67,7 +67,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             actionState.walls.splice(existingWallIndex, 1);
         }
 
-        const existingWeightIndex = actionState.weights.findIndex(w => w.x == actionPos.x && w.y == actionPos.y);
+        const existingWeightIndex = actionState.weights.findIndex(w => w.pos.x == actionPos.x && w.pos.y == actionPos.y);
         if(existingWeightIndex > -1) {
             actionState.weights.splice(existingWeightIndex, 1);
         }
@@ -94,7 +94,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             case "weight": {
                 // don't push if there was already a weight here
                 if(existingWeightIndex === -1) {
-                    actionState.weights.push(actionPos);
+                    actionState.weights.push({pos: actionPos, weight: 2});
                 }
                 actionStateChange(actionState);
                 break;
@@ -238,7 +238,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
 
     return (
         <OuterContainer ref={outerContainerRef}>
-            <Tooltip 
+            <MouseTrackingTooltip 
                 show={!!selectedCell}
             >
                 <TooltipContent>
@@ -261,7 +261,7 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
                         </div>
                     )}
                 </TooltipContent>
-            </Tooltip>
+            </MouseTrackingTooltip>
             <BoardContainer role="board">
                 {cells.length && boardState.rows.enumerate(row => (
                     <CellRow>

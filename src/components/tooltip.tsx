@@ -1,15 +1,50 @@
-import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { FC } from "react";
 import styled from "styled-components";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { FC, MutableRefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
+import TooltipContext from "@src/context/tooltip-context";
 
-export interface TooltipProps {
-    show: boolean;
-}
+const Tooltip : FC = ({children}) => {
+    const [tooltip, setTooltip] = useState<{handle: MutableRefObject<HTMLElement>, content: any}>(null);
 
-const Tooltip : FC<TooltipProps> = ({show, children}) => {
-    const [offset, setOffset] = useState<{top: number, left: number}>(null);
+    const showTooltip = (handle: MutableRefObject<HTMLElement>, content: any) =>{
+        setTooltip({ handle, content });
+    } 
+
+    const hideTooltip = (handle: MutableRefObject<HTMLElement>) => setTooltip(null);
+
+    const [show, setShow] = useState(false);
+    const [offset, setOffset] = useState<{top: number, left: number}>({top:0, left: 0});
     const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if(tooltip) {
+            const timeout = setTimeout(() => {
+                setShow(true);
+            }, 500);
+
+            return () => clearTimeout(timeout);
+        } else {
+            setShow(false);
+        }
+    }, [tooltip]);
+
+    useLayoutEffect(() => {
+        if(!tooltip || !show) {
+            return;
+        }
+
+        const { handle } = tooltip;
+
+        if(handle && handle.current && containerRef && containerRef.current) {
+            // place the tooltip below the handle
+            const { bottom, left, width: handleWidth } = handle.current.getBoundingClientRect();
+            const { width: containerWidth } = containerRef.current.getBoundingClientRect();
+
+            const containerTop = bottom + 10;
+            const containerLeft = left + (handleWidth /2) - (containerWidth /2);
+            setOffset({top: containerTop, left: containerLeft});
+        }
+    }, [tooltip, containerRef, show]);
 
     const variants = {
         initial: {
@@ -20,60 +55,27 @@ const Tooltip : FC<TooltipProps> = ({show, children}) => {
         }
     }
 
-    // detect if about to go off screen
-    useLayoutEffect(() => { 
-        const handler = (event: MouseEvent) => {
-            if(show && containerRef && containerRef.current) {
-                const { width, height } = containerRef.current.getBoundingClientRect();
-                const { x, y } = event;
-
-                const xOffset = 20;
-                const yOffset = 20;
-
-                let finalLeft = x + xOffset;
-                let finalTop = y + yOffset;
-
-                // put the tooltip to the left of the mouse instead of right
-                if(finalLeft + width >= (window.innerWidth || document.documentElement.clientWidth)) {
-                    // final left is right - width - xOffset
-                    finalLeft = x - width - xOffset;
-                }
-
-                // put the tooltip above the mouse instead of below
-                if(finalTop + height >= (window.innerHeight || document.documentElement.clientHeight)) {
-                    finalTop = y - height - yOffset;
-                }
-
-                setOffset({left: finalLeft, top: finalTop});
-            }
-        }
-        // find current mouse pos
-
-        window.addEventListener("mousemove", handler);
-
-        return () => {
-            window.removeEventListener("mousemove", handler)
-        }
-    }, [show, containerRef]);
-
     return (
-        <AnimatePresence>
-            {show && (
-                <Container
-                    ref={containerRef}
-                    variants={variants}
-                    initial="initial"
-                    animate="animate"
-                    exit="initial"
-                    top={offset?.top}
-                    left={offset?.left}
-                >
-                    {children}
-                </Container>        
-            )}
-        </AnimatePresence>
+        <TooltipContext.Provider value={{showTooltip, hideTooltip}}>
+            <AnimatePresence>
+                {show && tooltip && (
+                    <Container
+                        ref={containerRef}
+                        variants={variants}
+                        initial="initial"
+                        animate="animate"
+                        exit="initial"
+                        top={offset.top}
+                        left={offset.left}
+                    >
+                        {tooltip.content}
+                    </Container>
+                )}
+            </AnimatePresence>
+            {children}
+        </TooltipContext.Provider>
     )
-};
+}
 
 export default Tooltip;
 
@@ -84,10 +86,16 @@ interface ContainerProps {
 
 const Container = styled(motion.div)`
     position: absolute;
+    top: ${(p: ContainerProps) => p.top}px;
+    left: ${(p: ContainerProps) => p.left}px;
+    border-radius: 6px;
+    padding: .25rem .45rem;
     z-index: 9999;
     background: #F3F4F6;
-    border-radius: 6px;
-    padding: .5rem;
+    font-size: 14px;
+    color: #6B7280;
+    max-width: 250px;
+    text-align: center;
 
     box-shadow:
   0 1.3px 2.2px rgba(0, 0, 0, 0.02),
@@ -97,7 +105,4 @@ const Container = styled(motion.div)`
   0 19.6px 33.4px rgba(0, 0, 0, 0.05),
   0 47px 80px rgba(0, 0, 0, 0.07)
 ;
-
-    top: ${(p: ContainerProps) => p.top}px;
-    left: ${(p: ContainerProps) => p.left}px;
 `

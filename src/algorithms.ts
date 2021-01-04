@@ -8,7 +8,8 @@ const algorithms : Array<Algo> = [
         source: `board.run(algorithm);
 
 async function algorithm(settings, updater) {
-    const { columns: x, rows: y, start, end, walls } = settings;
+    const { graph, start, end } = settings;
+    
     let open = [createNode(start)];
     let closed = [];
 
@@ -26,18 +27,23 @@ async function algorithm(settings, updater) {
         open.splice(indexOfCurrent, 1);
         
         closed.push(current);
-        let neighbours = getNeighbours();
+
+        let neighbours = graph
+            .find(g => g.pos.x === current.pos.x && g.pos.y === current.pos.y)
+            .neighbours;
 
         for(let i = 0; i < neighbours.length; i++) {
             let n = neighbours[i];
-            let newX = current.pos.x + n.x;
-            let newY = current.pos.y + n.y;
-            // don't continue if position is off board, or a wall, or already closed
-            if(!posValid({x:newX,y:newY}, x, y, walls) || closed.some(c => c.pos.x === newX && c.pos.y === newY)) {
+            let newX = n.pos.x;
+            let newY = n.pos.y;
+            // don't continue if position is already closed
+            if(closed.some(c => c.pos.x === newX && c.pos.y === newY)) {
                 continue;
             }
             
-            
+            // call updater so debugger can see what we're touching
+            await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+
             // if position is already in the open, just update it if we're now closer
             if(open.some(c => c.pos.x === newX && c.pos.y === newY)) {
                 let openNode = open.find(o => o.pos.x === newX && o.pos.y === newY);
@@ -49,8 +55,6 @@ async function algorithm(settings, updater) {
                 }
                 
             } else { // otherwise add a new open node 
-                // call updater so debugger can see what we're touching
-                await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
                 open.push(createNode(
                     {x:newX,y:newY},
                     Math.abs(newX - start.x) + Math.abs(newY - start.y),
@@ -63,26 +67,6 @@ async function algorithm(settings, updater) {
 
     // was not possible to create a path
     return null;
-}
-
-function posValid(pos, xUpperBound, yUpperBound, walls) {
-    // pos is in grid and not a wall
-    return pos.x > -1 && pos.x < xUpperBound &&
-            pos.y > -1 && pos.y < yUpperBound &&
-        !walls.some(w => w.x === pos.x && w.y === pos.y);
-}
-
-function getNeighbours() {
-    return [
-        // left
-        {x:-1,y: 0},
-        // up
-        {x: 0,y:-1},
-        // right
-        {x: 1,y: 0},
-        // down
-        {x: 0,y: 1}
-    ];
 }
 
 function createNode(pos, fromStart, toEnd, previous) {
@@ -113,14 +97,11 @@ function getSmallest(nodes) {
     // of the smallest combined, return the one with the smallest toEnd value
     const copy = [...nodes];
     copy.sort((a,b) => {
-        if(a.combined == b.combined) {
-            return a.toEnd - b.toEnd;
-        }
         return a.combined - b.combined;
     });
+    
     return copy[0];
-}
-        `
+}`
     },
     {
         id: "dijkstra",
@@ -129,12 +110,96 @@ function getSmallest(nodes) {
         source: `board.run(algorithm);
         
 async function algorithm(settings, updater) {
-    const { columns, rows, start, end, walls, weights } = settings;
+    const { graph, start, end } = settings;
     
-    // add your code here  
+    // keep track of nodes that have been done so we don't go back to them
+    const finished = [];
+    // create a queue of nodes to visit with the start in it
+    let queue = [createNode(start, 0, null)];
+    
+    // break cases inside!
+    while(queue.length) {
+        const current = queue[0];
 
-    // call updater within your algorithm to update the board whenever you want
-    // await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+        // add current to finished, remove from queue
+        current.final = current.working;
+        finished.push(current);
+        
+        // we've reached the end, and should backtrack through the finished collection
+        // to find the shortest route
+        if(current.pos.x === end.x && current.pos.y === end.y) {
+            return current.getList();
+        }
+        
+        // get neighbours for current
+        const neighbours = graph
+            .find(g => g.pos.x === current.pos.x && g.pos.y === current.pos.y)
+            .neighbours;
+        
+        // check each neighbour
+        // if in finished already, do nothing
+        // if not, but already in queue, update its value in queue if the weight is less from current node
+        // if not, and not in queue, add to queue with neighbour[i].working + current.working
+        for(let i = 0; i < neighbours.length; i++) {
+            const n = neighbours[i];
+            if(finished.some(f => f.pos.x === n.pos.x && f.pos.y === n.pos.y)) {
+                continue;
+            }
+
+            await updater([{pos: current.pos, checkCountUpdate: 1}]);
+            
+            const existingQueueIndex = queue.findIndex(q => q.pos.x === n.pos.x && q.pos.y === n.pos.y);
+            // weight of node at n.pos is current working weight + weight from current to n (n.weightTo)
+            const weight = current.working + n.weight;
+            
+            // if n.pos node is already in the queue, update its working weight if the weight from here
+            // is lower
+            if(existingQueueIndex > -1) {
+                var neighbourCurrentWorking = queue[existingQueueIndex].working;
+                if(neighbourCurrentWorking > weight) {
+                    queue[existingQueueIndex].working = weight;
+                }
+            } else { // its not already in the queue, just add
+                queue.push(createNode(n.pos, null, weight, current))
+            }
+        }
+        
+        queue.shift();
+    
+        // sort queue by working order
+        queue.sort((a, b) => {
+            if(a.working < b.working) {
+                return -1;
+            }
+            
+            if(a.working > b.working) {
+                return 1;
+            }
+            
+            return 0;
+        });
+    }
+    
+    // if we got here a path could not be found
+    return null;
+}
+
+function createNode (pos, final, working, previous) {
+    return {
+        pos,
+        final,
+        working,
+        previous,
+        getList: function() {
+            if(!this.previous) {
+                return [this.pos];
+            }
+            
+            const prev = this.previous.getList();
+            prev.push(this.pos);
+            return prev;
+        }
+    }
 }`
     },
     {
@@ -144,12 +209,14 @@ async function algorithm(settings, updater) {
         source: `board.run(algorithm);
         
 async function algorithm(settings, updater) {
-    const { columns, rows, start, end, walls, weights } = settings;
+    const { graph, start, end } = settings;
     
     // add your code here   
     
     // call updater within your algorithm to update the board whenever you want
     // await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+
+    // return an array of positions that are in the desired path or null if not possible
 }`
     }
 ];

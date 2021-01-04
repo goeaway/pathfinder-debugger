@@ -1,3 +1,5 @@
+import { MutableRefObject } from "react";
+
 export type Cells = Array<Array<Cell>>;
 
 export type CellType = "start" | "end" | "wall" | "weight";
@@ -13,14 +15,23 @@ export interface BoardState {
     start: Pos;
     end: Pos;
     walls: Array<Pos>;
-    weights: Array<Pos>;
+    weights: Array<PosAndWeight>;
     rows: number;
     columns: number;
     checked: Array<{pos: Pos, count: number}>;
     shortestPath: Array<Pos>;
 }
 
-export type RunSettings = Pick<BoardState, "start" | "end" | "walls" | "weights" | "rows" | "columns">;
+export interface PosAndNeighbours {
+    pos: Pos;
+    neighbours: Array<PosAndWeight>;
+}
+
+export interface RunSettings { 
+    graph: Array<PosAndNeighbours> 
+    start: Pos;
+    end: Pos;
+}
 
 export interface CellUpdate {
     pos: Pos;
@@ -30,6 +41,11 @@ export interface CellUpdate {
 export interface Pos {
     x: number;
     y: number;
+}
+
+export interface PosAndWeight {
+    pos: Pos;
+    weight: number;
 }
 
 export type AlgoType = "custom" | "weighted" | "unweighted";
@@ -79,8 +95,6 @@ export interface CodeStorageService {
 export type PopoverPosition = "bottom" | "bottomright" | "bottomleft";
 
 export interface AppSettings {
-    boardColumns: number;
-    boardRows: number;
     updateSpeed: number;
     percentWalls: number;
     percentWeights: number;
@@ -89,4 +103,9 @@ export interface AppSettings {
 export interface AppSettingsService {
     getAppSettings: () => AppSettings;
     saveAppSettings: (settings: AppSettings) => void;
+}
+
+export interface TooltipContext {
+    showTooltip: (handle: MutableRefObject<HTMLElement>, content: any) => void;
+    hideTooltip: (handle: MutableRefObject<HTMLElement>) => void;
 }

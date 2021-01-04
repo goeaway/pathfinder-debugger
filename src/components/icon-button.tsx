@@ -2,6 +2,7 @@ import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { FC, ForwardedRef } from "react";
 import styled from "styled-components";
+import IconWithSecondary from "./icon-with-secondary";
 
 export interface IconButtonProps {
     icon: IconProp;
@@ -11,8 +12,11 @@ export interface IconButtonProps {
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>>(({icon, secondaryIcon, ...rest}, ref) => (
     <Button {...rest} ref={ref}>
-        <FontAwesomeIcon icon={icon} size="lg" />
-        {secondaryIcon && <FontAwesomeIcon className="secondary-icon" icon={secondaryIcon} size="xs" />}
+        <IconWithSecondary
+            icon={icon}
+            size="lg"
+            secondaryIcon={secondaryIcon}
+        />
     </Button>
 ));
 
@@ -31,16 +35,8 @@ const Button = styled.button`
     justify-content: center;
     align-items: center;
     transition: background 300ms ease;
-    position: relative;
 
     &:hover {
         background: #D1D5DB;
-    }
-
-    .secondary-icon {
-        position: absolute;
-        top: 7px;
-        right: 7px;
-        z-index: 1;
     }
 `

@@ -29,7 +29,7 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
         >
             {/* Display Icon based on start/end/wall/weight */}
             {cell.type === "start" && (
-                <span><FontAwesomeIcon color="#065F46" size="lg" icon={faHiking} /></span>
+                <span><FontAwesomeIcon color="#374151" size="lg" icon={faHiking} /></span>
             )}
             {cell.type === "end" && (
                 <span><FontAwesomeIcon color="#374151" icon={faCampground} /></span>
@@ -67,12 +67,13 @@ const Container = styled.span`
     border: 1px solid #1F2937;
 
     ${(p: ContainerProps) => p.checkCount > 0 && !p.shortestPath && css`
-        &:after {
+        &:before {
             position: absolute;
-            z-index: 10;
             content: "";
-            background: #2563EB;
+            background: green;
+            opacity: .3;
             border-radius: 50%;
+            transition: width 300ms, height 300ms;
             width: ${(p: ContainerProps) => p.checkCount * 10}px;
             height: ${(p: ContainerProps) => p.checkCount * 10}px;
         }

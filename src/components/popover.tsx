@@ -20,26 +20,42 @@ const Popover : FC<PopoverProps> = ({show, onDismissed, handle, children, positi
 
     // find the handle and move the popover to it
     useLayoutEffect(() => {
-        if(show && handle && handle.current && containerRef && containerRef.current) {
-            const { width, height } = containerRef.current.getBoundingClientRect();
-            const { top, left, bottom, right } = handle.current.getBoundingClientRect();
-
-            let finalTop = top;
-            let finalLeft = left;
-            // set the top and left of the popover based on the position
-            switch(position) {
-                case "bottom":
-                    break;
-                case "bottomleft":
-                    finalTop = bottom + 10;
-                    finalLeft = right - width;
-                    break;
-                case "bottomright":
-                    break;
+        const listener = () => {
+            if(show && handle && handle.current && containerRef && containerRef.current) {
+                const { width, height } = containerRef.current.getBoundingClientRect();
+                const { top, left, bottom, right } = handle.current.getBoundingClientRect();
+    
+                let finalTop = top;
+                let finalLeft = left;
+                // set the top and left of the popover based on the position
+                switch(position) {
+                    case "bottom":
+                        break;
+                    case "bottomleft":
+                        finalTop = bottom + 10;
+                        finalLeft = right - width;
+                        break;
+                    case "bottomright":
+                        break;
+                }
+    
+                if(finalTop < 0) {
+                    finalTop = 20;
+                }
+    
+                if(finalLeft < 0) {
+                    finalLeft = 20;
+                }
+    
+                setOffset({top: finalTop, left: finalLeft});
             }
-
-            setOffset({top: finalTop, left: finalLeft});
         }
+
+        listener();
+
+        window.addEventListener("resize", listener);
+
+        return () => window.removeEventListener("resize", listener);
     }, [show, handle, containerRef]);
 
     const variants = {

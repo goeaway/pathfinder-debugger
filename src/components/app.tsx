@@ -7,16 +7,19 @@ import Dark from "@src/themes/dark";
 import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCampground, faChessBoard, faCode, faCog, faDiceSix, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faStar, faStop, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faChessBoard, faClock, faCode, faCog, faDiceSix, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faRulerCombined, faStar, faStop, faTachometerAlt, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
 import toast, { Toaster } from "react-hot-toast";
 import IconButton from "./icon-button";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { HiddenSm } from "@src/utility-components";
 import Popover from "./popover";
 import getTypeIcon from "@src/utils/get-type-icon";
-import getTypeDescription from "@src/utils/get-type-description";
 import { randomInRange } from "@src/utils/random-in-range";
 import useAppSettings from "@src/hooks/use-app-settings";
+import SettingsEditor from "./settings-editor";
+import Help from "./help";
+import Tooltip from "./tooltip";
+import { getGraph } from "@src/utils/get-graph";
 
 const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     return {
@@ -31,18 +34,24 @@ const getDefaultBoardState = (rows: number, columns: number) : BoardState => {
     }
 }
 
+const ROWS = 20;
+const COLS = 20;
+const PATH_SET_TIMEOUT = 25;
+
 const App = () => {
+    const { getCode, saveCode, getBoardState, saveBoardState } = useCodeStorage();
     const { getAppSettings, saveAppSettings } = useAppSettings();
     const appSettings = getAppSettings();
-    const { getCode, saveCode, getBoardState, saveBoardState } = useCodeStorage();
+    const [editableSettings, setEditableSettings] = useState(appSettings);
     const [running, setRunning] = useState(false);
-    const [algo, setAlgo] = useState<EditableAlgo>(getCode() || {...algorithms[0], code: ""});
-    const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(appSettings.boardRows, appSettings.boardColumns));
-    // use a ref instead of state because we need to keep this value up to date when passing it into board.run callback, when we store in state this value is not updated for the callback
-    const runningCancelled = useRef(false);
+    const [algo, setAlgo] = useState<EditableAlgo>(getCode());
+    const [boardState, setBoardState] = useState<BoardState>(getBoardState() || getDefaultBoardState(ROWS, COLS));
     const [onClickSetType, setOnClickSetType] = useState<CellType>("start");
     const [showHelp, setShowHelp] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    // use a ref instead of state because we need to keep this value up to date when passing it into board.run callback,
+    // when we store in state this value is not updated for the callback
+    const runningCancelled = useRef(false);
     const helpButtonRef = useRef<HTMLButtonElement>(null);
     const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -57,11 +66,11 @@ const App = () => {
                     <div>
                         Error occurred when running algorithm
                     </div>
-                    <pre>
+                    <WrappedPre>
                         {result.message}
-                    </pre>
+                    </WrappedPre>
                 </div>, {
-                duration: 5000
+                duration: 20000
             });
         } else {
             // we have a valid path
@@ -73,7 +82,7 @@ const App = () => {
                     await new Promise(res => setTimeout(() => {
                         setBoardState(newState);
                         res(null);
-                    }, appSettings.updateSpeed));
+                    }, PATH_SET_TIMEOUT));
                 }
                 toast.dismiss();
                 toast(`${result.length -1} step path found`, 
@@ -93,33 +102,20 @@ const App = () => {
         } 
         
         runningCancelled.current = false;
-            
     }, [boardState]);
     
     useEffect(() => {
-        const getSettingsForRun = () : RunSettings => {
-            // return current settings
-            return {
-                columns: boardState.columns,
-                rows: boardState.rows,
-                start: boardState.start,
-                end: boardState.end,
-                walls: boardState.walls,
-                weights: boardState.weights
-            }
-        }
-
         const updater = (cellUpdates: Array<CellUpdate>) : Promise<void> => {
-            // foreach cell update, 
-            // find the cell at the same pos
-            // update its checkCount by the amount
             return new Promise((res, rej) => {
                 if(runningCancelled.current) {
                     rej(new Error("Run was cancelled"));
                 }
-
+                
                 if(cellUpdates) {
                     const newState = Object.assign({}, boardState);
+                    // foreach cell update, 
+                    // find the cell at the same pos
+                    // update its checkCount by the amount
 
                     cellUpdates.forEach(cu => {
                         // if this cell already has a checked value
@@ -132,7 +128,12 @@ const App = () => {
                     });
 
                     setBoardState(newState);
+
                     setTimeout(res, appSettings.updateSpeed);
+                    // if(appSettings.updateSpeed > 10) {
+                    // } else {
+                    //     res();
+                    // }
                 } else {
                     res();
                 }
@@ -154,18 +155,28 @@ const App = () => {
                 // set that we're running, then call the runner function
                 setRunning(true);
 
-                pathfinderRunner(getSettingsForRun(), updater)
+                // create adjacency list
+                const graph = getGraph(boardState.rows, boardState.columns, boardState.walls, boardState.weights);
+
+                pathfinderRunner({
+                        graph,
+                        start: boardState.start,
+                        end: boardState.end
+                    }, 
+                    updater)
                     .then(pathfinderRunnerComplete)
                     .catch(pathfinderRunnerComplete);
             }
         }
-    }, [boardState]);
-
-
+    }, [boardState, appSettings]);
 
     useEffect(() => {
         saveBoardState(boardState);
     }, [boardState]);
+
+    useEffect(() => {
+        saveAppSettings(editableSettings);
+    }, [editableSettings]);
 
     useEffect(() => {
         saveCode(algo);
@@ -277,7 +288,7 @@ const App = () => {
         changes = changes.concat(newState.walls);
 
         // set a percentage of the cells to be weights
-        newState.weights = Math.floor(columns * rows * (appSettings.percentWeights/100)).enumerate(i => getRandomUniquePosition(columns, rows, changes));
+        newState.weights = Math.floor(columns * rows * (appSettings.percentWeights/100)).enumerate(i => ({pos: getRandomUniquePosition(columns, rows, changes), weight: 2}));
 
         newState.checked = [];
         newState.shortestPath = [];
@@ -355,75 +366,38 @@ const App = () => {
         <ThemeProvider theme={Dark}>
             <AppContainer role="app">
                 <Toaster toastOptions={{className: "notifications"}} />
-                <TopBar>
-                    <Popover show={showHelp} onDismissed={onHelpDismissHandler} handle={helpButtonRef} position="bottomleft">
-                        <PopoverContent>
-                            <HelpText>
-                                Add a Start, End, Walls and Weights to the board.
-                            </HelpText>
-                            <HelpText>
-                                Then Run the algorithm of your choice and see how it performs.
-                            </HelpText>
-                            <HelpText>
-                                Start&nbsp;<FontAwesomeIcon icon={faHiking} />
-                            </HelpText>
-                            <HelpTextSmall>
-                                {getTypeDescription("start")}. Press <b>S</b> while selecting a cell to add.    
-                            </HelpTextSmall>
-                            <HelpText>
-                                End&nbsp;<FontAwesomeIcon icon={faCampground} />
-                            </HelpText>
-                            <HelpTextSmall>
-                                {getTypeDescription("end")}. Press <b>E</b> while selecting a cell to add.
-                            </HelpTextSmall>
-                            <HelpText>
-                                Wall&nbsp;<FontAwesomeIcon icon={faMountain} />
-                            </HelpText>
-                            <HelpTextSmall>
-                                {getTypeDescription("wall")}. Press <b>W</b> while selecting a cell to add.
-                            </HelpTextSmall>
-                            <HelpText>
-                                Weight&nbsp;<FontAwesomeIcon icon={faTree} />
-                            </HelpText>
-                            <HelpTextSmall>
-                                {getTypeDescription("weight")}. Press <b>Q</b> while selecting a cell to add.
-                            </HelpTextSmall>
-                        </PopoverContent>
-                    </Popover>
-                    <Popover show={showSettings} onDismissed={onSettingsDismissHandler} handle={settingsButtonRef} position="bottomleft">
-                        board size
-
-                        update speed
-
-                        randomise walls percentage
-
-                        randomise weights percentage
-
-                        reset to defaults button
-                    </Popover>
-                    <TitleSection>
-                        <Title>Pathfinder Debugger</Title>
-                        <Description>Test pre made or custom pathdfinding algorithms with this online tool.</Description>
-                    </TitleSection>
-                    <Controls>
-                        <IconButton icon={faQuestion} onClick={onHelpClickHandler} title="Help" ref={helpButtonRef} />
-                        <IconButton icon={faCode} secondaryIcon={faUndoAlt} onClick={onCodeResetHandler} title="Reset your code" />
-                        <IconButton icon={faChessBoard} secondaryIcon={faUndoAlt} onClick={onBoardResetHandler} title="Reset the board" />
-                        <IconButton icon={faDiceSix} onClick={onRandomiseBoardHandler} title="Randomise the board. Possible routes are not guaranteed" />
-                        <IconButton icon={faCog} onClick={onSettingsClickHandler} ref={settingsButtonRef} title="Settings" />
-                        <IconButton icon={getTypeIcon(onClickSetType)} secondaryIcon={faPlusCircle} onClick={onTypeChangeClick} title={getSettingTitle()} />
-                        <RunButton 
-                            title={running ? "Stop the run" : "Run the code to test the algorithm"}
-                            onClick={onRunHandler} 
-                            running={running}>
-                                {(running ? <><FontAwesomeIcon icon={faStop}/><HiddenSm>&nbsp;&nbsp;Stop</HiddenSm></> : <><FontAwesomeIcon icon={faPlay}/><HiddenSm>&nbsp;&nbsp;Run</HiddenSm></>)}
-                        </RunButton>
-                    </Controls>
-                </TopBar>
-                <ContentContainer>
-                    <Editor algo={algo} onCodeChange={onCodeChangeHandler} onAlgorithmChange={onAlgorithmChangeHandler} />
-                    <Board canEdit={!running} boardState={boardState} onBoardStateChange={setBoardState} onCellClickType={onClickSetType} />
-                </ContentContainer>
+                <Tooltip>
+                    <TopBar>
+                        <Popover show={showHelp} onDismissed={onHelpDismissHandler} handle={helpButtonRef} position="bottomleft">
+                            <Help />
+                        </Popover>
+                        <Popover show={showSettings} onDismissed={onSettingsDismissHandler} handle={settingsButtonRef} position="bottomleft">
+                            <SettingsEditor settings={editableSettings} onSettingsChanged={s => setEditableSettings(s)} />
+                        </Popover>
+                        <TitleSection>
+                            <Title>Pathfinder Debugger</Title>
+                            <Description>Test pre made or custom pathdfinding algorithms with this online tool.</Description>
+                        </TitleSection>
+                        <Controls>
+                            <IconButton icon={faQuestion} onClick={onHelpClickHandler} title="Help" ref={helpButtonRef} />
+                            <IconButton icon={faCode} secondaryIcon={faUndoAlt} onClick={onCodeResetHandler} title="Reset your code" />
+                            <IconButton icon={faChessBoard} secondaryIcon={faUndoAlt} onClick={onBoardResetHandler} title="Reset the board" />
+                            <IconButton icon={faDiceSix} onClick={onRandomiseBoardHandler} title="Randomise the board. Possible routes are not guaranteed" />
+                            <IconButton icon={faCog} onClick={onSettingsClickHandler} ref={settingsButtonRef} title="Settings" />
+                            <IconButton icon={getTypeIcon(onClickSetType)} secondaryIcon={faPlusCircle} onClick={onTypeChangeClick} title={getSettingTitle()} />
+                            <RunButton 
+                                title={running ? "Stop the run" : "Run the code to test the algorithm"}
+                                onClick={onRunHandler} 
+                                running={running}>
+                                    {(running ? <><FontAwesomeIcon icon={faStop}/><HiddenSm>&nbsp;&nbsp;Stop</HiddenSm></> : <><FontAwesomeIcon icon={faPlay}/><HiddenSm>&nbsp;&nbsp;Run</HiddenSm></>)}
+                            </RunButton>
+                        </Controls>
+                    </TopBar>
+                    <ContentContainer>
+                        <Editor algo={algo} onCodeChange={onCodeChangeHandler} onAlgorithmChange={onAlgorithmChangeHandler} />
+                        <Board canEdit={!running} boardState={boardState} onBoardStateChange={setBoardState} onCellClickType={onClickSetType} />
+                    </ContentContainer>
+                </Tooltip>
             </AppContainer>
         </ThemeProvider>
     );
@@ -440,10 +414,6 @@ const AppContainer = styled.div`
     height: 100%;
     padding: .5rem 1rem;
     background: #F3F4F6;
-
-    > * {
-        width: 100%;
-    }
 
     button {
         font-family: 'Roboto', sans-serif;
@@ -475,6 +445,7 @@ const TopBar = styled.div`
     grid-column-start: 1;
     grid-column-end: 3;
     margin-bottom: .5rem;
+    width: 100%;
 
     @media(min-width:${p => p.theme.breakpoints.sm}px) {
         flex-direction: row;
@@ -514,6 +485,7 @@ const RunButton = styled.button`
 
 const ContentContainer = styled.div`
     height: 100%;
+    width: 100%;
     display: flex;
     flex-direction: column;
 
@@ -546,19 +518,7 @@ const Title = styled.h1`
     margin: 0;
 `
 
-const PopoverContent = styled.div`
-    display: flex;
-    flex-direction: column;
-`
+const WrappedPre = styled.pre`
+    white-space: pre-wrap;
 
-const HelpText = styled.p`
-    display: flex;
-    margin: .5rem 0;
-`
-
-const HelpTextSmall = styled.p`
-    margin: 0;
-    margin-bottom: .5rem;
-    font-size: 14px;
-    color: #6B7280;
 `

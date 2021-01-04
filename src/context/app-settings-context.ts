@@ -5,11 +5,9 @@ export const defaultAppSettingsContext : AppSettingsService = {
     getAppSettings: () => {
         const raw = window.localStorage.getItem("appsettings");
         return raw ? JSON.parse(raw) : {
-            boardColumns: 20,
-            boardRows: 20,
             updateSpeed: 25,
             percentWalls: 30,
-            percentWeights: 20
+            percentWeights: 20,
         }
     },
     saveAppSettings: (settings: AppSettings) => {
