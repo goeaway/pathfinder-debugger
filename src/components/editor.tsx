@@ -92,6 +92,7 @@ const Button = styled.button`
     padding: .75rem;
     cursor: pointer;
     transition: background 300ms ease;
+    outline: none;
 
     ${(p: ButtonProps) => p.active && css`
         border-bottom: 2px solid #9CA3AF;

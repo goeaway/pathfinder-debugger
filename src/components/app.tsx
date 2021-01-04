@@ -129,11 +129,11 @@ const App = () => {
 
                     setBoardState(newState);
 
-                    setTimeout(res, appSettings.updateSpeed);
-                    // if(appSettings.updateSpeed > 10) {
-                    // } else {
-                    //     res();
-                    // }
+                    if(appSettings.updateSpeed > 10) {
+                        setTimeout(res, appSettings.updateSpeed);
+                    } else {
+                        res();
+                    }
                 } else {
                     res();
                 }

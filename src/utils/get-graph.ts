@@ -1,21 +1,21 @@
-import { Pos, PosAndNeighbours } from "@src/types";
+import { Graph, Pos, PosAndNeighbours, PosAndWeight } from "@src/types";
 
-export const getGraph = (rows: number, cols: number, walls: Pos[], weights: Array<{pos: Pos, weight: number}>) : Array<PosAndNeighbours> => {
-    const graph = [];
+export const getGraph = (rows: number, cols: number, walls: Pos[], weights: Array<PosAndWeight>) : Graph => {
+    const graph: Graph = {};
     
     for(let row = 0; row < rows; row++) {
         for(let col = 0; col < cols; col++) {
             const pos = { x: col, y: row };
             const neighbours = getNeighbours(pos, rows, cols, walls, weights);
-            
-            graph.push({pos, neighbours});
+            const key = `${pos.x},${pos.y}`;
+            graph[key] = {pos,neighbours};
         }
     }
 
     return graph;
 }
 
-const getNeighbours = (pos: Pos, rows: number, cols: number, walls: Pos[], weights: Array<{pos: Pos, weight: number}>) => {
+const getNeighbours = (pos: Pos, rows: number, cols: number, walls: Pos[], weights: Array<PosAndWeight>) : Array<PosAndWeight> => {
     const directions = [
         // left
         {x:-1,y: 0},

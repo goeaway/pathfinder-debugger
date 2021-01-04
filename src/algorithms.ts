@@ -28,9 +28,10 @@ async function algorithm(settings, updater) {
         
         closed.push(current);
 
-        let neighbours = graph
-            .find(g => g.pos.x === current.pos.x && g.pos.y === current.pos.y)
-            .neighbours;
+        // use the current.pos in this string representation to query the graph
+        const currentKey = current.pos.x + "," + current.pos.y;
+        // get neighbours for current.
+        const { neighbours } = graph[currentKey];
 
         for(let i = 0; i < neighbours.length; i++) {
             let n = neighbours[i];
@@ -131,10 +132,10 @@ async function algorithm(settings, updater) {
             return current.getList();
         }
         
-        // get neighbours for current
-        const neighbours = graph
-            .find(g => g.pos.x === current.pos.x && g.pos.y === current.pos.y)
-            .neighbours;
+        // use the current.pos in this string representation to query the graph
+        const currentKey = current.pos.x + "," + current.pos.y;
+        // get neighbours for current.
+        const { neighbours } = graph[currentKey];
         
         // check each neighbour
         // if in finished already, do nothing
@@ -146,7 +147,7 @@ async function algorithm(settings, updater) {
                 continue;
             }
 
-            await updater([{pos: current.pos, checkCountUpdate: 1}]);
+            await updater([{pos: n.pos, checkCountUpdate: 1}]);
             
             const existingQueueIndex = queue.findIndex(q => q.pos.x === n.pos.x && q.pos.y === n.pos.y);
             // weight of node at n.pos is current working weight + weight from current to n (n.weightTo)

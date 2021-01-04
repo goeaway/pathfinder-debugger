@@ -27,8 +27,12 @@ export interface PosAndNeighbours {
     neighbours: Array<PosAndWeight>;
 }
 
+export interface Graph {
+    [key: string]: PosAndNeighbours;
+}
+
 export interface RunSettings { 
-    graph: Array<PosAndNeighbours> 
+    graph: Graph;
     start: Pos;
     end: Pos;
 }
