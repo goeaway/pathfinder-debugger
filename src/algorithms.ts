@@ -43,7 +43,7 @@ async function algorithm(settings, updater) {
             }
             
             // call updater so debugger can see what we're touching
-            await updater([{pos: {x:newX,y:newY}, checkCountUpdate: 1}]);
+            await updater([{pos: n.pos, checkCountUpdate: 1}]);
 
             // if position is already in the open, just update it if we're now closer
             if(open.some(c => c.pos.x === newX && c.pos.y === newY)) {
@@ -57,7 +57,7 @@ async function algorithm(settings, updater) {
                 
             } else { // otherwise add a new open node 
                 open.push(createNode(
-                    {x:newX,y:newY},
+                    n.pos,
                     Math.abs(newX - start.x) + Math.abs(newY - start.y),
                     Math.abs(newX - end.x) + Math.abs(newY - end.y),
                     current
