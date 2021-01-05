@@ -4,10 +4,9 @@ import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
 import Editor from "./editor";
 import Dark from "@src/themes/dark";
-import algorithms from "@src/algorithms";
 import { useCodeStorage } from "@src/hooks/use-code-storage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCampground, faChessBoard, faClock, faCode, faCog, faDiceSix, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faRulerCombined, faStar, faStop, faTachometerAlt, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faChessBoard, faCode, faCog, faDiceSix, faExclamationTriangle, faHiking, faMountain, faPlay, faPlusCircle, faQuestion, faRoute, faStop, faTree, faUndo, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
 import toast, { Toaster } from "react-hot-toast";
 import IconButton from "./icon-button";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
@@ -103,71 +102,40 @@ const App = () => {
         
         runningCancelled.current = false;
     }, [boardState]);
-    
-    useEffect(() => {
-        const updater = (cellUpdates: Array<CellUpdate>) : Promise<void> => {
-            return new Promise((res, rej) => {
-                if(runningCancelled.current) {
-                    rej(new Error("Run was cancelled"));
-                }
-                
-                if(cellUpdates) {
-                    const newState = Object.assign({}, boardState);
-                    // foreach cell update, 
-                    // find the cell at the same pos
-                    // update its checkCount by the amount
 
-                    cellUpdates.forEach(cu => {
-                        // if this cell already has a checked value
-                        const checkedIndex = newState.checked.findIndex(c => c.pos.x == cu.pos.x && c.pos.y == cu.pos.y);
-                        if(checkedIndex > -1) {
-                            newState.checked[checkedIndex].count += cu.checkCountUpdate;
-                        } else {
-                            newState.checked.push({pos: cu.pos, count: cu.checkCountUpdate});
-                        }
-                    });
+    const pathfinderUpdater = useCallback((cellUpdates: Array<CellUpdate>) : Promise<void> => {
+        return new Promise((res, rej) => {
+            if(runningCancelled.current) {
+                rej(new Error("Run was cancelled"));
+            }
+            
+            if(cellUpdates) {
+                const newState = Object.assign({}, boardState);
+                // foreach cell update, 
+                // find the cell at the same pos
+                // update its checkCount by the amount
 
-                    setBoardState(newState);
-
-                    if(appSettings.updateSpeed > 10) {
-                        setTimeout(res, appSettings.updateSpeed);
+                cellUpdates.forEach(cu => {
+                    // if this cell already has a checked value
+                    const checkedIndex = newState.checked.findIndex(c => c.pos.x == cu.pos.x && c.pos.y == cu.pos.y);
+                    if(checkedIndex > -1) {
+                        newState.checked[checkedIndex].count += cu.checkCountUpdate;
                     } else {
-                        res();
+                        newState.checked.push({pos: cu.pos, count: cu.checkCountUpdate});
                     }
+                });
+
+                setBoardState(newState);
+
+                if(appSettings.updateSpeed > 10) {
+                    setTimeout(res, appSettings.updateSpeed);
                 } else {
                     res();
                 }
-            })
-        }
-
-        // add window.board api
-        window.board = {
-            run: (pathfinderRunner: (
-                settings: RunSettings,
-                updater: (cellUpdates: Array<CellUpdate>) => Promise<void>) => Promise<Array<Pos>>) => {
-                // reset the board state
-                setBoardState(s => {
-                    s.checked = [];
-                    s.shortestPath = [];
-                    return s;
-                });
-
-                // set that we're running, then call the runner function
-                setRunning(true);
-
-                // create adjacency list
-                const graph = getGraph(boardState.rows, boardState.columns, boardState.walls, boardState.weights);
-
-                pathfinderRunner({
-                        graph,
-                        start: boardState.start,
-                        end: boardState.end
-                    }, 
-                    updater)
-                    .then(pathfinderRunnerComplete)
-                    .catch(pathfinderRunnerComplete);
+            } else {
+                res();
             }
-        }
+        })
     }, [boardState, appSettings]);
 
     useEffect(() => {
@@ -214,7 +182,38 @@ const App = () => {
             }
             
             try {
-                eval(algo.code);
+                // reset the board state
+                setBoardState(s => {
+                    s.checked = [];
+                    s.shortestPath = [];
+                    return s;
+                });
+
+                // set that we're running, then call the runner function
+                setRunning(true);
+
+                const settings = {
+                    graph: getGraph(boardState.rows, boardState.columns, boardState.walls, boardState.weights),
+                    start: boardState.start,
+                    end: boardState.end
+                }
+
+                // this may be a bad idea, but works
+                let solution : { 
+                    algorithm: (
+                        settings: RunSettings, 
+                        updater: (cellUpdates: Array<CellUpdate>) => Promise<void>) => Promise<Array<Pos>> 
+                };
+
+                // set the solution from this scope - maybe should change this to new Function() to limit scope
+                eval(`${algo.code}
+
+solution = new Solution();
+`);
+                solution.algorithm(settings, pathfinderUpdater)
+                    // pathfinderRunnerComplete handles both success and error
+                    .then(pathfinderRunnerComplete)
+                    .catch(pathfinderRunnerComplete);
             } catch (e) {
                 pathfinderRunnerComplete(e as Error);
             }

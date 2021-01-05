@@ -23,6 +23,11 @@ const MouseTrackingTooltip : FC<MouseTrackingTooltipProps> = ({show, children}) 
     // detect if about to go off screen
     useLayoutEffect(() => { 
         const handler = (event: MouseEvent) => {
+            // i need the tooltip to be shown (to exist) before i can figure out the rectangle
+            // so when this event gets called, we need to somehow delay it until innerShow is true
+
+            // at the moment, the user moves into a cell, and this event gets run
+            // 
             if(show && containerRef && containerRef.current) {
                 const { width, height } = containerRef.current.getBoundingClientRect();
                 const { x, y } = event;
