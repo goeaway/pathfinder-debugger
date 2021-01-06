@@ -110,6 +110,19 @@ export interface AppSettingsService {
 }
 
 export interface TooltipContext {
-    showTooltip: (handle: MutableRefObject<HTMLElement>, content: any) => void;
+    showTooltip: (
+        handle: MutableRefObject<HTMLElement>, 
+        content: any, 
+        options?: TooltipOptions) => void;
     hideTooltip: (handle: MutableRefObject<HTMLElement>) => void;
+}
+
+export interface TooltipOptions {
+    showDelay?: number;
+    offsetCalculator?: (tooltipWidth: number, tooltipNumber: number) => ElementOffset;
+}
+
+export interface ElementOffset {
+    top: number;
+    left: number;
 }

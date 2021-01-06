@@ -12,7 +12,7 @@ const TooltipHandle : FC<TooltipHandleProps> = ({content, children}) => {
     const { showTooltip, hideTooltip } = useTooltip();
 
     return (
-        <Container ref={ref} onMouseOver={() => showTooltip(ref, content)} onMouseLeave={() => hideTooltip(ref)}>
+        <Container ref={ref} onMouseOver={() => showTooltip(ref, content, { showDelay: 500 })} onMouseLeave={() => hideTooltip(ref)}>
             {children}
         </Container>
     )

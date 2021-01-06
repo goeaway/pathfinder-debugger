@@ -6,7 +6,6 @@ import getTypeIcon from "@src/utils/get-type-icon";
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
-import MouseTrackingTooltip from "./mouse-tracking-tooltip";
 
 export interface BoardProps {
     onBoardStateChange: (newState: BoardState) => void;
@@ -238,30 +237,6 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
 
     return (
         <OuterContainer ref={outerContainerRef}>
-            <MouseTrackingTooltip 
-                show={!!selectedCell}
-            >
-                <TooltipContent>
-                    <div>
-                        <FontAwesomeIcon icon={faMapMarkerAlt} /> {selectedCell?.pos.x}, {selectedCell?.pos.y}
-                    </div>
-                    {selectedCell?.type && (
-                        <div>
-                            <FontAwesomeIcon icon={getTypeIcon(selectedCell.type)} /> {getTypeDescription(selectedCell.type)}
-                        </div>
-                    )}
-                    {selectedCell?.checkCount && (
-                        <div>
-                            <FontAwesomeIcon icon={faSearch} /> Cell was checked {selectedCell?.checkCount} time{selectedCell.checkCount !== 1 ? "s" : ""}
-                        </div>
-                    )}
-                    {selectedCell?.shortestPath && ["start", "end"].indexOf(selectedCell?.type) === -1 && selectedCell?.type !== "end" && (
-                        <div>
-                            <FontAwesomeIcon icon={faRoute} /> Cell is part of the shortest path
-                        </div>
-                    )}
-                </TooltipContent>
-            </MouseTrackingTooltip>
             <BoardContainer role="board">
                 {cells.length && boardState.rows.enumerate(row => (
                     <CellRow>
@@ -340,11 +315,3 @@ const CellRow = styled.div`
     }
 `
 
-const TooltipContent = styled.div`
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    gap: 5px;
-    max-width: 200px;
-    color: #374151;
-`

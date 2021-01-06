@@ -6,13 +6,15 @@ const algorithms : Array<Algo> = [
         name: "A Star",
         type: "weighted",
         source: `class Solution {
-    async algorithm(settings, updater) {
+    async algorithm(settings, updater, canceller) {
         const { graph, start, end } = settings;
         
         const open = [this.createNode(start)];
         const closed = [];
 
         while(open.length != 0) {
+            canceller();
+
             // get the current smallest length node in the open
             const current = this.getSmallest(open);
             
@@ -112,7 +114,7 @@ const algorithms : Array<Algo> = [
         name: "Dijkstra's",
         type: "weighted",
         source: `class Solution {
-    async algorithm(settings, updater) {
+    async algorithm(settings, updater, canceller) {
         const { graph, start, end } = settings;
         
         // keep track of nodes that have been done so we don't go back to them
@@ -122,6 +124,8 @@ const algorithms : Array<Algo> = [
         
         // break cases inside!
         while(queue.length) {
+            canceller();
+
             const current = queue[0];
 
             // add current to finished, remove from queue
@@ -212,7 +216,7 @@ const algorithms : Array<Algo> = [
         type: "unweighted",
         source: `class Solution {
     // The pathfinder debugger API will call this function when the run starts
-    async algorithm(settings, updater) {
+    async algorithm(settings, updater, canceller) {
         // get the graph, start and end from the settings provided
         const { graph, start, end } = settings;
         
@@ -221,6 +225,7 @@ const algorithms : Array<Algo> = [
         const queue = [root];
         
         while(queue.length) {
+            canceller();
             const node = queue.shift();
             if(node.pos.x === end.x && node.pos.y === end.y) {
                 return node.getList();
@@ -273,7 +278,7 @@ const algorithms : Array<Algo> = [
         type: "custom",
         source: `class Solution {
     // The pathfinder debugger API will call this function when the run starts
-    async algorithm(settings, updater) {
+    async algorithm(settings, updater, canceller) {
         // get the graph, start and end from the settings provided
         const { graph, start, end } = settings;
         
@@ -291,6 +296,11 @@ const algorithms : Array<Algo> = [
         // - call updater to update the board with the latest changes
         // - provide an array of positions you'd like to udpate, with the amount they should be updated by
         //   await updater([{pos: {x: 0, y: 0}, checkCountUpdate: 1 }])
+
+        // - call canceller to stop your algorithm run when you press the stop button,
+        // - this should be called regularly within your main loop 
+        // - if a cancellation is detected it will throw an error, which will be handled by the pathfinder debugger API
+        //   canceller();
         
         // return null to signify a complete path from start to end could not be found
         return null;

@@ -2,15 +2,26 @@ import styled from "styled-components";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { FC, MutableRefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import TooltipContext from "@src/context/tooltip-context";
+import { ElementOffset, TooltipOptions } from "@src/types";
 
 const Tooltip : FC = ({children}) => {
-    const [tooltip, setTooltip] = useState<{handle: MutableRefObject<HTMLElement>, content: any}>(null);
+    const [tooltip, setTooltip] = useState<{
+        handle: MutableRefObject<HTMLElement>, 
+        content: any, 
+        options?: TooltipOptions}>(null);
 
-    const showTooltip = (handle: MutableRefObject<HTMLElement>, content: any) =>{
-        setTooltip({ handle, content });
+    const showTooltip = (
+        handle: MutableRefObject<HTMLElement>, 
+        content: any, 
+        options?: TooltipOptions) => {
+        setTooltip({ handle, content, options });
     } 
 
-    const hideTooltip = (handle: MutableRefObject<HTMLElement>) => setTooltip(null);
+    const hideTooltip = (handle: MutableRefObject<HTMLElement>) => {
+        if(tooltip && handle == tooltip.handle) {
+            setTooltip(null);
+        }
+    }
 
     const [show, setShow] = useState(false);
     const [offset, setOffset] = useState<{top: number, left: number}>({top:0, left: 0});
@@ -20,7 +31,7 @@ const Tooltip : FC = ({children}) => {
         if(tooltip) {
             const timeout = setTimeout(() => {
                 setShow(true);
-            }, 500);
+            }, tooltip.options?.showDelay);
 
             return () => clearTimeout(timeout);
         } else {
@@ -38,10 +49,17 @@ const Tooltip : FC = ({children}) => {
         if(handle && handle.current && containerRef && containerRef.current) {
             // place the tooltip below the handle
             const { bottom, left, width: handleWidth } = handle.current.getBoundingClientRect();
-            const { width: containerWidth } = containerRef.current.getBoundingClientRect();
+            const { width: containerWidth, height: containerHeight } = containerRef.current.getBoundingClientRect();
 
-            const containerTop = bottom + 10;
-            const containerLeft = left + (handleWidth /2) - (containerWidth /2);
+            let containerTop = bottom + 10;
+            let containerLeft = left + (handleWidth /2) - (containerWidth /2);
+
+            if(tooltip.options?.offsetCalculator) {
+                const { top, left } = tooltip.options.offsetCalculator(containerWidth, containerHeight);
+                containerTop = top;
+                containerLeft = left;
+            }
+
             setOffset({top: containerTop, left: containerLeft});
         }
     }, [tooltip, containerRef, show]);
@@ -95,7 +113,6 @@ const Container = styled(motion.div)`
     font-size: 14px;
     color: #6B7280;
     max-width: 250px;
-    text-align: center;
 
     box-shadow:
   0 1.3px 2.2px rgba(0, 0, 0, 0.02),

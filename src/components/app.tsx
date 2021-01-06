@@ -105,10 +105,6 @@ const App = () => {
 
     const pathfinderUpdater = useCallback((cellUpdates: Array<CellUpdate>) : Promise<void> => {
         return new Promise((res, rej) => {
-            if(runningCancelled.current) {
-                rej(new Error("Run was cancelled"));
-            }
-            
             if(cellUpdates) {
                 const newState = Object.assign({}, boardState);
                 // foreach cell update, 
@@ -127,7 +123,7 @@ const App = () => {
 
                 setBoardState(newState);
 
-                if(appSettings.updateSpeed > 10) {
+                if(appSettings.updateSpeed >= 25) {
                     setTimeout(res, appSettings.updateSpeed);
                 } else {
                     res();
@@ -137,6 +133,14 @@ const App = () => {
             }
         })
     }, [boardState, appSettings]);
+
+    const pathfinderCanceller = useCallback(() => {
+        if(runningCancelled.current) {
+            throw new Error("Run was cancelled");
+        }
+
+        return false;
+    }, [boardState]);
 
     useEffect(() => {
         saveBoardState(boardState);
@@ -202,7 +206,8 @@ const App = () => {
                 let solution : { 
                     algorithm: (
                         settings: RunSettings, 
-                        updater: (cellUpdates: Array<CellUpdate>) => Promise<void>) => Promise<Array<Pos>> 
+                        updater: (cellUpdates: Array<CellUpdate>) => Promise<void>,
+                        canceller: () => boolean) => Promise<Array<Pos>> 
                 };
 
                 // set the solution from this scope - maybe should change this to new Function() to limit scope
@@ -210,7 +215,7 @@ const App = () => {
 
 solution = new Solution();
 `);
-                solution.algorithm(settings, pathfinderUpdater)
+                solution.algorithm(settings, pathfinderUpdater, pathfinderCanceller)
                     // pathfinderRunnerComplete handles both success and error
                     .then(pathfinderRunnerComplete)
                     .catch(pathfinderRunnerComplete);
