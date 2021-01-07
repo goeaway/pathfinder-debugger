@@ -35,7 +35,7 @@ const Help : FC = () => {
                 Weight&nbsp;<FontAwesomeIcon icon={faTree} />
             </HelpText>
             <HelpTextSmall>
-                {getTypeDescription("weight")}. Press <b>Q</b> while selecting a cell to add.
+                {getTypeDescription("weight")}. Max weight of <b>5</b>. Press <b>Q</b> while selecting a cell to add. Increase weight value with <b>Q</b>.
             </HelpTextSmall>
         </Container>
     )

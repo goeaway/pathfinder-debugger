@@ -1,4 +1,4 @@
-import { Algo, BoardState, Cell, Cells, CellType, CellUpdate, EditableAlgo, Pos, RunSettings } from "@src/types";
+import { Algo, BoardState, CellType, CellUpdate, EditableAlgo, Pos, RunSettings } from "@src/types";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
@@ -123,16 +123,12 @@ const App = () => {
 
                 setBoardState(newState);
 
-                if(appSettings.updateSpeed >= 25) {
-                    setTimeout(res, appSettings.updateSpeed);
-                } else {
-                    res();
-                }
+                setTimeout(res, PATH_SET_TIMEOUT);
             } else {
                 res();
             }
         })
-    }, [boardState, appSettings]);
+    }, [boardState]);
 
     const pathfinderCanceller = useCallback(() => {
         if(runningCancelled.current) {
@@ -292,7 +288,11 @@ solution = new Solution();
         changes = changes.concat(newState.walls);
 
         // set a percentage of the cells to be weights
-        newState.weights = Math.floor(columns * rows * (appSettings.percentWeights/100)).enumerate(i => ({pos: getRandomUniquePosition(columns, rows, changes), weight: 2}));
+        newState.weights = Math.floor(columns * rows * (appSettings.percentWeights/100))
+            .enumerate(i => ({
+                pos: getRandomUniquePosition(columns, rows, changes), 
+                weight: randomInRange(2, 6)
+            }));
 
         newState.checked = [];
         newState.shortestPath = [];

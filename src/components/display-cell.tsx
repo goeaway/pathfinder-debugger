@@ -1,11 +1,10 @@
-import { faCampground, faHiking, faMapMarkerAlt, faMountain, faPlay, faRoute, faSearch, faStar, faTree } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faHiking, faMapMarkerAlt, faMountain, faRoute, faSearch, faTree } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import useTooltip from "@src/hooks/use-tooltip";
 import { Cell } from "@src/types";
 import getTypeDescription from "@src/utils/get-type-description";
 import getTypeIcon from "@src/utils/get-type-icon";
 import React, { ForwardedRef, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { MutableRefObject } from "react";
 import styled, { css } from "styled-components";
 
 export interface CellProps {
@@ -33,7 +32,9 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
                         </div>
                         {cell.type && (
                             <div>
-                                <FontAwesomeIcon icon={getTypeIcon(cell.type)} /> {getTypeDescription(cell.type)}
+                                <FontAwesomeIcon icon={getTypeIcon(cell.type)} /> 
+                                &nbsp;
+                                {cell.weight ? <>This cell has a weight of <b>{cell.weight}</b></> : getTypeDescription(cell.type)}
                             </div>
                         )}
                         {cell.checkCount && (
@@ -97,6 +98,7 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
             onMouseLeave={onMouseLeave}
             onClick={onClick} 
             pulse={["start", "end"].indexOf(cell.type) > -1}
+            weight={cell.weight}
         >
             {/* Display Icon based on start/end/wall/weight */}
             {cell.type === "start" && (
@@ -122,6 +124,7 @@ interface ContainerProps {
     checkCount?: number;
     shortestPath?: boolean;
     pulse?: boolean;
+    weight?: number;
     size: number;
 }
 
@@ -147,6 +150,23 @@ const Container = styled.span`
             transition: width 300ms, height 300ms;
             width: ${(p: ContainerProps) => p.checkCount * 10}px;
             height: ${(p: ContainerProps) => p.checkCount * 10}px;
+        }
+    `}
+
+    ${(p: ContainerProps) => p.weight > 0 && css`
+        &:after {
+            content: "${(p: ContainerProps) => p.weight > 9 ? "9+" : p.weight}";
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #059669;
+            font-weight: 600;
+            font-size: 16px;
+            line-height: 16px;
+            border-radius: 50%;
+            top: 0;
+            right: 1.5px;
         }
     `}
 
@@ -182,4 +202,5 @@ const TooltipContent = styled.div`
     gap: 5px;
     max-width: 200px;
     color: #374151;
+    padding: .25rem;
 `

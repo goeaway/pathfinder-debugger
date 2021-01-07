@@ -8,8 +8,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFeatherAlt, faPen, faWeightHanging } from "@fortawesome/free-solid-svg-icons";
 import { Algo, AlgoType, EditableAlgo } from "@src/types";
 
-
-
 export interface EditorProps {
     algo: EditableAlgo;
     onCodeChange: (value: string) => void;

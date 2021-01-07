@@ -1,8 +1,4 @@
-import { faMapMarkerAlt, faRoute, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { BoardState, Cell, Cells, CellType, Pos } from "@src/types";
-import getTypeDescription from "@src/utils/get-type-description";
-import getTypeIcon from "@src/utils/get-type-icon";
+import { BoardState, Cell,  CellType, Pos } from "@src/types";
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import DisplayCell from "./display-cell";
@@ -16,16 +12,19 @@ export interface BoardProps {
 
 const createCell = (row: number, column: number, boardState: BoardState) : Cell => {
     const { start, end, walls, weights, checked, shortestPath } = boardState;
+    // get the weightItem so we can use the weight on the display cell (if there is one)
+    const weightItem = weights.find(w => w.pos.x === column && w.pos.y === row);
 
     return {
         type: start?.x === column && start?.y === row ? "start" :
               end?.x === column && end?.y === row ? "end" :
               walls.some(w => w.x === column && w.y === row) ? "wall" : 
-              weights.some(w => w.pos.x === column && w.pos.y === row) ? "weight" :
+              !!weightItem ? "weight" :
               null,
         checkCount: checked.find(c => c.pos.x === column && c.pos.y === row)?.count,
         shortestPath: shortestPath.some(sp => sp.x === column && sp.y === row),
-        pos: { y: row, x: column }
+        pos: { y: row, x: column },
+        weight: weightItem?.weight
     }
 }
 
@@ -67,8 +66,13 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
         }
 
         const existingWeightIndex = actionState.weights.findIndex(w => w.pos.x == actionPos.x && w.pos.y == actionPos.y);
+        // We do this so that if the new type for this cell is actually a weight, we can carry over the weight value from the old one on click
+        let carryOverWeight = 2;
         if(existingWeightIndex > -1) {
-            actionState.weights.splice(existingWeightIndex, 1);
+            const removedWeight = actionState.weights.splice(existingWeightIndex, 1);
+            if(removedWeight.length > 0) {
+                carryOverWeight = removedWeight[0].weight + 1;
+            }
         }
 
         switch(type) {
@@ -92,8 +96,8 @@ const Board: React.FC<BoardProps> = ({ boardState, onBoardStateChange, canEdit, 
             }
             case "weight": {
                 // don't push if there was already a weight here
-                if(existingWeightIndex === -1) {
-                    actionState.weights.push({pos: actionPos, weight: 2});
+                if(existingWeightIndex === -1 || carryOverWeight <= 5) {
+                    actionState.weights.push({pos: actionPos, weight: carryOverWeight});
                 }
                 actionStateChange(actionState);
                 break;

@@ -1,15 +1,25 @@
 const path = require("path");
+const analyser = require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
 
 module.exports = (env) => {
     return {
         mode: env.prod ? "production" : "development",
         devtool: env.prod ? undefined : 'inline-source-map',
-        entry: './src/index.tsx',
+        entry: {
+            app: {
+                import: './src/index.tsx',
+                dependOn: "vendors"
+            },
+            vendors: ["framer-motion", "@fortawesome/react-fontawesome", "@fortawesome/free-solid-svg-icons", "ace-builds"]
+        },
         output: {
-            filename: 'bundle.js',
+            filename: '[name]-bundle.js',
             path: __dirname + '/build',
             publicPath: '/'
         },
+        plugins: [
+            new analyser({analyzerMode: env.analyse ? "server" : "disabled"})
+        ],
         resolve: {
             extensions: ['.ts', '.tsx', '.js'],
             alias: {

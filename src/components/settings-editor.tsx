@@ -13,26 +13,13 @@ export interface SettingsEditorProps {
 }
 
 const SettingsEditor : FC<SettingsEditorProps> = ({settings, onSettingsChanged}) => {
-    const [updateSpeed, setUpdateSpeed] = useState(settings.updateSpeed + "");
     const [pWalls, setPWalls] = useState(settings.percentWalls + "");
     const [pWeights, setPWeights] = useState(settings.percentWeights + "");
 
     useEffect(() => {
-        setUpdateSpeed(settings.updateSpeed + "");
         setPWalls(settings.percentWalls + "");
         setPWeights(settings.percentWeights + "");
     }, [settings]);
-
-    useEffect(() => {
-        const newSettings = Object.assign({}, settings);
-        const updateSpeedNum = Number(updateSpeed);
-
-        newSettings.updateSpeed = isNaN(updateSpeedNum) ? 25 :
-            updateSpeedNum < 0 ? 0 :
-            updateSpeedNum;
-
-        onSettingsChanged(newSettings);
-    }, [updateSpeed]);
 
     useEffect(() => {
         const newSettings = Object.assign({}, settings);
@@ -60,7 +47,6 @@ const SettingsEditor : FC<SettingsEditorProps> = ({settings, onSettingsChanged})
 
     const onResetClickHandler = () => {
         const newSettings = Object.assign({}, settings);
-        newSettings.updateSpeed = 25;
         newSettings.percentWalls = 30;
         newSettings.percentWeights = 20;
 
@@ -69,12 +55,6 @@ const SettingsEditor : FC<SettingsEditorProps> = ({settings, onSettingsChanged})
 
     return (
         <Container>
-            <Section>
-                <TooltipHandle content={<>Set the time in <b>milliseconds</b> between updates to the board</>}>
-                    <FontAwesomeIcon icon={faTachometerAlt} size="lg" />
-                </TooltipHandle>
-                <Input type="number" value={updateSpeed} onChange={e => setUpdateSpeed(e.target.value)} min="0" />
-            </Section>
             <Section>
                 <TooltipHandle content={<>Set the percentage of cells that are set to <b>walls</b> when randomised. Max <b>40%</b></>}>
                     <IconWithSecondary

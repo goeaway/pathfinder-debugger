@@ -9,6 +9,7 @@ export interface Cell {
     checkCount?: number;
     shortestPath?: boolean;
     pos?: Pos;
+    weight?: number;
 }
 
 export interface BoardState {
@@ -99,7 +100,6 @@ export interface CodeStorageService {
 export type PopoverPosition = "bottom" | "bottomright" | "bottomleft";
 
 export interface AppSettings {
-    updateSpeed: number;
     percentWalls: number;
     percentWeights: number;
 }
