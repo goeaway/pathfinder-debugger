@@ -77,7 +77,7 @@ const DisplayCell: React.FC<CellProps> = ({cell, selected, onMouseEnter, onMouse
         } else {
             hideTooltip(containerRef);
         }
-    }, [startTooltipCountdown]);
+    }, [startTooltipCountdown, cell]);
 
     useEffect(() => {
         if(selected) {
