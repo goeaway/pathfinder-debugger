@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest",
     "local": "webpack serve --env dev",
+    "remotebuild": "webpack --env prod",
     "build": "@powershell Copy-Item -Path \"./wwwroot/*\" -Destination \"./build\" -Recurse -Force & webpack --env prod & @powershell Remove-Item ./build/*.LICENSE.txt",
     "analyse": "webpack --env prod --env analyse"
   },
