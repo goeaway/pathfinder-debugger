@@ -287,7 +287,7 @@ const CellRow = styled.div`
     justify-content: center;
 
     &:first-child > * {
-        border-top: 2px solid #1F2937;
+        border-top: 2px solid #4B5563;
 
         &:first-child {
             border-top-left-radius: 6px;
@@ -299,7 +299,7 @@ const CellRow = styled.div`
     }
 
     &:last-child > * {
-        border-bottom: 2px solid #1F2937;
+        border-bottom: 2px solid #4B5563;
 
         &:first-child {
             border-bottom-left-radius: 6px;
@@ -311,11 +311,11 @@ const CellRow = styled.div`
     }
 
     & > *:first-child {
-        border-left: 2px solid #1F2937;
+        border-left: 2px solid #4B5563;
     }
 
     & > *:last-child {
-        border-right: 2px solid #1F2937;
+        border-right: 2px solid #4B5563;
     }
 `
 

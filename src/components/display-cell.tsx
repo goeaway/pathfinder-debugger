@@ -138,7 +138,7 @@ const Container = styled.span`
     align-items: center;
     overflow: hidden;
     position: relative;
-    border: 1px solid #1F2937;
+    border: 1px solid #4B5563;
 
     ${(p: ContainerProps) => p.checkCount > 0 && !p.shortestPath && css`
         &:before {
