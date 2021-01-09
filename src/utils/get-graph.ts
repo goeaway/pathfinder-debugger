@@ -6,9 +6,11 @@ export const getGraph = (rows: number, cols: number, walls: Pos[], weights: Arra
     for(let row = 0; row < rows; row++) {
         for(let col = 0; col < cols; col++) {
             const pos = { x: col, y: row };
-            const neighbours = getNeighbours(pos, rows, cols, walls, weights);
-            const key = `${pos.x},${pos.y}`;
-            graph[key] = {pos,neighbours};
+            if(!walls.some(w => w.x === pos.x && w.y === pos.y)) {
+                const neighbours = getNeighbours(pos, rows, cols, walls, weights);
+                const key = `${pos.x},${pos.y}`;
+                graph[key] = {pos,neighbours};
+            }
         }
     }
 
