@@ -132,7 +132,7 @@ const Container = styled.span`
     width: ${(p: ContainerProps) => p.size}px;
     height: ${(p: ContainerProps) => p.size}px;
     background: #F3F4F6;
-    cursor: pointer;
+    cursor: ${(p: ContainerProps) => p.selected ? "pointer" : "default"};
     display: flex;
     justify-content: center;
     align-items: center;

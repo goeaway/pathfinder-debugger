@@ -38,11 +38,6 @@ export interface RunSettings {
     end: Pos;
 }
 
-export interface CellUpdate {
-    pos: Pos;
-    checkCountUpdate: number;
-}
-
 export interface Pos {
     x: number;
     y: number;

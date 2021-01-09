@@ -34,6 +34,8 @@ const algorithms : Array<Algo> = [
             // get neighbours for current.
             const { neighbours } = graph[currentKey];
 
+            const neighboursUpdate = [];
+
             for(let i = 0; i < neighbours.length; i++) {
                 const n = neighbours[i];
                 const newX = n.pos.x;
@@ -44,13 +46,12 @@ const algorithms : Array<Algo> = [
                     continue;
                 }
                 
-                // call updater so debugger can see what we're touching
-                await updater([{pos: n.pos, checkCountUpdate: 1}]);
-
+                neighboursUpdate.push(n.pos);
+                
                 // if position is already in the open, just update it if we're now closer
                 const existingOpenIndex = open.findIndex(o => o.pos.x === newX && o.pos.y === newY);
                 const nodeFromStart = current.fromStart + n.weight;
-
+                
                 if(existingOpenIndex > -1) {
                     const openNode = open[existingOpenIndex];
                     
@@ -65,10 +66,15 @@ const algorithms : Array<Algo> = [
                         nodeFromStart,
                         Math.abs(newX - end.x) + Math.abs(newY - end.y),
                         current
-                    ));
+                        ));
+                    }
+                }  
+                
+                if(neighboursUpdate.length) {
+                    // call updater so debugger can see what we're touching
+                    await updater(neighboursUpdate);
                 }
-            }  
-        }
+            }
 
         // was not possible to create a path
         return null;
@@ -143,6 +149,7 @@ const algorithms : Array<Algo> = [
             // get neighbours for current.
             const { neighbours } = graph[currentKey];
             
+            const neighboursUpdate = [];
             // check each neighbour
             // if in finished already, do nothing
             // if not, but already in queue, update its value in queue if the weight is less from current node
@@ -153,7 +160,7 @@ const algorithms : Array<Algo> = [
                     continue;
                 }
 
-                await updater([{pos: n.pos, checkCountUpdate: 1}]);
+                neighboursUpdate.push(n.pos);
                 
                 const existingQueueIndex = queue.findIndex(q => q.pos.x === n.pos.x && q.pos.y === n.pos.y);
                 // weight of node at n.pos is current working weight + weight from current to n (n.weightTo)
@@ -170,6 +177,8 @@ const algorithms : Array<Algo> = [
                     queue.push(this.createNode(n.pos, null, weight, current))
                 }
             }
+
+            await updater(neighboursUpdate);
             
             queue.shift();
         
@@ -234,6 +243,7 @@ const algorithms : Array<Algo> = [
             const nodeKey = node.pos.x + "," + node.pos.y;
             
             const { neighbours } = graph[nodeKey];
+            const neighboursUpdate = [];
             
             for(const n of neighbours) {
                 // don't add if already finished
@@ -241,13 +251,15 @@ const algorithms : Array<Algo> = [
                     continue;
                 }
             
-                await updater([{pos: n.pos, checkCountUpdate: 1}]);
+                neighboursUpdate.push(n.pos);
                 
                 // create node
                 const nNode = this.createNode(n.pos, node);
                 queue.push(nNode);
                 finished.push(nNode);
             }
+            
+            await updater(neighboursUpdate);
         }
         
         // return null to signify a complete path from start to end could not be found
@@ -295,7 +307,7 @@ const algorithms : Array<Algo> = [
         
         // - call updater to update the board with the latest changes
         // - provide an array of positions you'd like to udpate, with the amount they should be updated by
-        //   await updater([{pos: {x: 0, y: 0}, checkCountUpdate: 1 }])
+        //   await updater([{x: 0, y: 0}, {x: 1, y: 1}])
 
         // - call canceller to stop your algorithm run when you press the stop button,
         // - this should be called regularly within your main loop 

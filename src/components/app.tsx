@@ -1,4 +1,4 @@
-import { Algo, BoardState, CellType, CellUpdate, EditableAlgo, Pos, RunSettings } from "@src/types";
+import { Algo, BoardState, CellType, EditableAlgo, Pos, RunSettings } from "@src/types";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import Board from "./board";
@@ -103,7 +103,7 @@ const App = () => {
         runningCancelled.current = false;
     }, [boardState]);
 
-    const pathfinderUpdater = useCallback((cellUpdates: Array<CellUpdate>) : Promise<void> => {
+    const pathfinderUpdater = useCallback((cellUpdates: Array<Pos>) : Promise<void> => {
         return new Promise((res, rej) => {
             if(cellUpdates) {
                 const newState = Object.assign({}, boardState);
@@ -113,11 +113,11 @@ const App = () => {
 
                 cellUpdates.forEach(cu => {
                     // if this cell already has a checked value
-                    const checkedIndex = newState.checked.findIndex(c => c.pos.x == cu.pos.x && c.pos.y == cu.pos.y);
+                    const checkedIndex = newState.checked.findIndex(c => c.pos.x == cu.x && c.pos.y == cu.y);
                     if(checkedIndex > -1) {
-                        newState.checked[checkedIndex].count += cu.checkCountUpdate;
+                        newState.checked[checkedIndex].count += 1;
                     } else {
-                        newState.checked.push({pos: cu.pos, count: cu.checkCountUpdate});
+                        newState.checked.push({pos: cu, count: 1});
                     }
                 });
 
@@ -202,7 +202,7 @@ const App = () => {
                 let solution : { 
                     algorithm: (
                         settings: RunSettings, 
-                        updater: (cellUpdates: Array<CellUpdate>) => Promise<void>,
+                        updater: (cellUpdates: Array<Pos>) => Promise<void>,
                         canceller: () => boolean) => Promise<Array<Pos>> 
                 };
 
